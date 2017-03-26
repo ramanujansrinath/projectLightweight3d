@@ -2,7 +2,10 @@
 package org.xper.drawing.stick;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
 import javax.media.j3d.Transform3D;
@@ -53,9 +56,9 @@ public class MatchStick implements Drawable {
 	final float MATT_SPEC = 0.0f;
 	final float MATT_DIFF  = 0.60754f;
 
-    public MatchStick()
-    {
-    }
+	private Point3d[] boundingBox;
+	
+    public MatchStick() {}
 
     /**
         clean the old storage of information
@@ -761,9 +764,11 @@ public class MatchStick implements Drawable {
 
 
     			comp[i].drawSurfPt(colorCode[i-1],scaleForMAxisShape);
-            }
-        else
+            } 
+        else {
         	obj1.drawVect();
+        	boundingBox = obj1.getBoundingBox();
+        }
     }
 
      /**
@@ -4034,6 +4039,60 @@ public class MatchStick implements Drawable {
     
     public void setTextureType(String tt) {
     	textureType = tt;
+    }
+    
+    protected void redraw() {
+        int minX = (int)boundingBox[0].x;
+        int minY = (int)boundingBox[0].y;
+        int maxX = (int)boundingBox[1].x;
+        int maxY = (int)boundingBox[1].y;
+
+        System.out.println("x = [" + minX + ", " + maxX + "]");
+        System.out.println("y = [" + minX + ", " + maxY + "]");
+
+        int screenWidth = 600;
+        int screenHeight = 600;
+
+        minX = minX + screenWidth/2;  maxX = maxX + screenWidth/2;
+        minY = minY + screenHeight/2; maxY = maxY + screenHeight/2;
+
+        System.out.println("x = [" + minX + ", " + maxX + "]");
+        System.out.println("y = [" + minX + ", " + maxY + "]");
+
+        int nPixX = maxX - minX;
+        int nPixY = maxY - minY;
+
+        ByteBuffer color = ByteBuffer.allocateDirect(nPixX*nPixY*3);
+        GL11.glReadPixels(minX,minY, nPixX, nPixY, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, color);
+
+        String pixels = pixelToStr(color, nPixX,nPixY);
+
+        try {
+            BufferedWriter out = new BufferedWriter(new FileWriter("/Users/ecpc32/Desktop/temp/pix.txt"));
+
+            out.write(pixels);
+            out.flush();
+            out.close();
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+    }
+
+    private String pixelToStr(ByteBuffer color, int nPixX, int nPixY) {
+        String str = new String();
+        color.rewind();
+        for(int i=0; i<nPixX*nPixY; i+=3) {
+            int a = (color.get(i) & 0xff);
+//          if (a != 127)
+                str = str + a + "\n";
+             // + "," + (color.get() & 0xff) + "," + (color.get() & 0xff)
+
+        }
+        return str;
+    }
+
+    public Point3d[] getBoundingBox() {
+        return boundingBox;
     }
     
     public MStickObj4Smooth getSmoothObj() {

@@ -22,6 +22,10 @@ public class MStickObj4Smooth {
     public int[][] facInfo = new int[45000][3];
     public int nVect;
     public int nFac;
+    
+    double xLim_min = 500, xLim_max = -500;
+    double yLim_min = 500, yLim_max = -500;
+    double zLim_min = 500, zLim_max = -500;
 
     public void setInfo(int inVect, Point3d[] ivect_info, Vector3d[] inormMat_info, int inFac, int[][] ifacInfo)
     {
@@ -175,13 +179,13 @@ public class MStickObj4Smooth {
 		for (int i=0; i< nFac; i++) {
 			GL11.glBegin(GL11.GL_TRIANGLES);
 			
-			
 			Point3d p1 = vect_info[ facInfo[i][0]];
 			Point3d p2 = vect_info[ facInfo[i][1]];
 			Point3d p3 = vect_info[ facInfo[i][2]];
 			Vector3d v1 = normMat_info[ facInfo[i][0]];
 			Vector3d v2 = normMat_info[ facInfo[i][1]];
 			Vector3d v3 = normMat_info[ facInfo[i][2]];
+			
 			if ( v1.length() >= 1.01 || v1.length() <= 0.99) {
 				System.out.println("error in v1 length as:");
 				System.out.println(v1.x +" "+ v1.y + " " +v1.z);
@@ -206,6 +210,14 @@ public class MStickObj4Smooth {
 			GL11.glVertex3d( p3.x, p3.y, p3.z);
 			
 			GL11.glEnd();
+			
+			xLim_max = Math.max(xLim_max, p1.x); xLim_max = Math.max(xLim_max, p2.x);
+            yLim_max = Math.max(yLim_max, p1.y); yLim_max = Math.max(yLim_max, p2.y);
+            zLim_max = Math.max(zLim_max, p1.z); zLim_max = Math.max(zLim_max, p2.z);
+
+            xLim_min = Math.min(xLim_min, p1.x); xLim_min = Math.min(xLim_min, p2.x);
+            yLim_min = Math.min(yLim_min, p1.y); yLim_min = Math.min(yLim_min, p2.y);
+            zLim_min = Math.min(zLim_min, p1.z); zLim_min = Math.min(zLim_min, p2.z);
 		}
 		GL11.glDisable(GL11.GL_LIGHTING);
     }
@@ -1070,6 +1082,21 @@ public class MStickObj4Smooth {
         return true;
     }
     
+    
+    public Point3d[] getBoundingBox() {
+        Point3d[] box = new Point3d[2];
+        box[0] = new Point3d();
+        box[0].x = xLim_min;
+        box[0].y = yLim_min;
+        box[0].z = zLim_min;
+
+        box[1] = new Point3d();
+        box[1].x = xLim_max;
+        box[1].y = yLim_max;
+        box[1].z = zLim_max;
+
+        return box;
+    }
 }
 
 /**
