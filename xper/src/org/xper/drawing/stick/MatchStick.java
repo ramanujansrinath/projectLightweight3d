@@ -17,7 +17,6 @@ import org.xper.drawing.drawables.Drawable;
 public class MatchStick implements Drawable {
     final double scaleForMAxisShape  = 30.0;
     
-    private int showMode = 1;
     private double[] finalRotation;
     private Point3d finalShiftinDepth;
     private int nComponent;
@@ -63,7 +62,6 @@ public class MatchStick implements Drawable {
     */
     private void cleanData()
     {
-        showMode = 1;
         nComponent = 0;
         nEndPt = 0;
         nJuncPt = 0;
@@ -79,31 +77,23 @@ public class MatchStick implements Drawable {
     {
         int i;
 
-        this.showMode = in.showMode;
         this.nComponent = in.nComponent;
-//      if (in.parentStick == null)
-//          this.parentStick = null;
-//      else
-//          this.parentStick.copyFrom(in.parentStick);
-        for (i=1; i<=nComponent; i++)
-        {
+
+        for (i=1; i<=nComponent; i++) {
             this.comp[i] = new TubeComp();
             this.comp[i].copyFrom(in.comp[i]);
         }
         this.nEndPt = in.nEndPt;
-        for (i=1; i<=nEndPt; i++)
-        {
+        for (i=1; i<=nEndPt; i++) {
             this.endPt[i] = new EndPt_struct();
             this.endPt[i].copyFrom(in.endPt[i]);
         }
         this.nJuncPt = in.nJuncPt;
-        for (i=1; i<=nJuncPt; i++)
-        {
+        for (i=1; i<=nJuncPt; i++) {
             this.JuncPt[i] = new JuncPt_struct();
             this.JuncPt[i].copyFrom(in.JuncPt[i]);
         }
-        this.obj1 = in.obj1; // don't know if this object copy is okay or not, be careful
-                     // probably fine, but be careful!!
+        this.obj1 = in.obj1; 
 
         for (i=1; i<=nComponent; i++)
             this.LeafBranch[i] = in.LeafBranch[i];
@@ -753,33 +743,27 @@ public class MatchStick implements Drawable {
 
      }
 
-    public void drawSkeleton()
-    {
+    public void drawSkeleton() {
         int i;
-        showMode = 1;
-          if (showMode == 0)
-          {
-
-            for (i=1; i<=nComponent; i++)
-                {
-                //              comp[i].mAxisInfo.drawArc();
-                    float[][] colorCode= {  {1.0f, 1.0f, 1.0f},
-                                {1.0f, 0.0f, 0.0f},
-                                {0.0f, 1.0f, 0.0f},
-                                {0.0f, 0.0f, 1.0f},
-                                {0.0f, 1.0f, 1.0f},
-                                {1.0f, 0.0f, 1.0f},
-                                {1.0f, 1.0f, 0.0f},
-                                {0.4f, 0.1f, 0.6f} };
+        boolean showComponents = false;
+        if (showComponents)
+    		for (i=1; i<=nComponent; i++) {
+    			float[][] colorCode= {  
+	    			{1.0f, 1.0f, 1.0f},
+	                {1.0f, 0.0f, 0.0f},
+	                {0.0f, 1.0f, 0.0f},
+	                {0.0f, 0.0f, 1.0f},
+	                {0.0f, 1.0f, 1.0f},
+	                {1.0f, 0.0f, 1.0f},
+	                {1.0f, 1.0f, 0.0f},
+	                {0.4f, 0.1f, 0.6f} 
+	                };
 
 
-                    comp[i].drawSurfPt( colorCode[i-1]);
-                   //debug
-
-                }
-          }
-          if (showMode == 1)
-            obj1.drawVect();
+    			comp[i].drawSurfPt(colorCode[i-1],scaleForMAxisShape);
+            }
+        else
+        	obj1.drawVect();
     }
 
      /**
@@ -877,7 +861,7 @@ public class MatchStick implements Drawable {
     */
     private boolean validMStickSize()
     {
-    	double maxRad = 1; //deg
+    	double maxRad = 10; // degree
     	double screenDist = 635;
 
     	double radSize = screenDist * Math.tan(maxRad*Math.PI/180) / 2;
@@ -887,19 +871,16 @@ public class MatchStick implements Drawable {
         Point3d ori = new Point3d(0.0,0.0,0.0);
         double dis;
         for (i=1; i<=nComponent; i++)
-            for (j=1; j<= comp[i].nVect; j++)
-	        {
+            for (j=1; j<= comp[i].nVect; j++) {
 	            dis = comp[i].vect_info[j].distance(ori);
 	            if ( dis > radSize )
-	            {
 	                  return false;
-	            }
 	        }
         return true;
     }
 
     /**
-    * function check that if the final generated tube have remote collsion or not
+    * function check that if the final generated tube have remote collision or not
     */
     private boolean finalTubeCollisionCheck()
     {

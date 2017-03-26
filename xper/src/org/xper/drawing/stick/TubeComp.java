@@ -576,14 +576,14 @@ public class TubeComp
 		minXYZ = new Point3d(minX, minY, minZ);
 	}
 
-	public void drawSurfPt(float[] colorCode)
+	public void drawSurfPt(float[] colorCode, double scaleFactor)
 	{
 	    //use the oGL draw line function to draw out the mAxisArc
 		/*int ringSample = 20;
 		  int capSample = 10;		
 		  int maxStep = 51;*/
 		if (scaleOnce) {
-			scaleTheObj();
+			scaleTheObj(scaleFactor);
 			scaleOnce = false;
 		}
 		
@@ -723,14 +723,14 @@ public class TubeComp
 		Translate the mAxisInfo and the vect_info to the new finalPos
 	*/
 
-	public void 	scaleTheObj()
+	public void scaleTheObj(double scaleFactor)
 	{
 		int i;
 		for (i=1; i<=nVect; i++)
 		{
-			vect_info[i].x *= 10;
-			vect_info[i].y *= 10;
-			vect_info[i].z *= 10;
+			vect_info[i].x *= scaleFactor;
+			vect_info[i].y *= scaleFactor;
+			vect_info[i].z *= scaleFactor;
 			
 		}
 	}
