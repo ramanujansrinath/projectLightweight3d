@@ -290,35 +290,6 @@ public class MStickSpec {
     public VertexInfo vertex = new VertexInfo();
     public boolean animation;
 
-    // for debug
-      public static void main(String[] args)
-        {
-            System.out.println("debug MStick spec");
-
-            MStickSpec aStick = new MStickSpec();
-
-            MatchStick nowStick = new MatchStick();
-            nowStick.genMatchStickRand();
-
-            aStick.setMStickInfo(nowStick);
-
-
-            String p = aStick.toXml();
-            System.out.println(p);
-
-            MStickSpec g = (MStickSpec)s.fromXML(p);
-
-            System.out.println("vect 3 info");
-            System.out.println(nowStick.obj1.vect_info[71]);
-            System.out.println(nowStick.obj1.normMat_info[193]);
-            System.out.println(nowStick.obj1.facInfo[3][0]);
-            System.out.println(nowStick.obj1.facInfo[3][1]);
-            System.out.println(nowStick.obj1.facInfo[3][2]);
-            g.vertex.showDebug();
-            // practice about double <--> byte array conversion
-        }
-    //boolean animation;
-
     transient static XStream s;
 
     static {
@@ -394,8 +365,8 @@ public class MStickSpec {
 
     public void setMStickInfo( MatchStick inStick)
     {
-		this.mAxis.setMAxisInfo( inStick);
-		this.vertex.setVertexInfo( inStick.obj1);
+		this.mAxis.setMAxisInfo(inStick);
+		this.vertex.setVertexInfo(inStick.getSmoothObj());
     }
 
 

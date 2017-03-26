@@ -17,20 +17,17 @@ import org.xper.drawing.drawables.Drawable;
 public class MatchStick implements Drawable
 {
     final double scaleForMAxisShape  = 30.0;
+    private int showMode = 1;
+    private double[] finalRotation;
+    private Point3d finalShiftinDepth;
+    private int nComponent;
 
-    public MatchStick tempStick ;
-    public MatchStick parentStick;
-    public int showMode = 1;
-    public double[] finalRotation;
-    public Point3d finalShiftinDepth;
-    public int nComponent;
-
-    public TubeComp[] comp = new TubeComp[9];
-    public int nEndPt;
-    public int nJuncPt;
-    public EndPt_struct[] endPt = new EndPt_struct[50];
-    public JuncPt_struct[] JuncPt = new JuncPt_struct[50];
-    public MStickObj4Smooth obj1;
+    private TubeComp[] comp = new TubeComp[9];
+    private int nEndPt;
+    private int nJuncPt;
+    private EndPt_struct[] endPt = new EndPt_struct[50];
+    private JuncPt_struct[] JuncPt = new JuncPt_struct[50];
+    private MStickObj4Smooth obj1;
     private boolean[] LeafBranch = new boolean[10];
 
     private final double[] PARAM_nCompDist = {0.0 ,0.2, 0.6, 1.0, 0.0, 0.0, 0.0, 0.0};
@@ -43,7 +40,7 @@ public class MatchStick implements Drawable
                       								// the prob. of chg the final rot angle after a GA mutate
     private final double TangentSaveZone = Math.PI / 6.0;
     
-    public int nowCenterTube;
+    private int nowCenterTube;
     
     private String textureType = "SHADE";
 
@@ -112,612 +109,6 @@ public class MatchStick implements Drawable
             this.LeafBranch[i] = in.LeafBranch[i];
     }
 
-    /**
-     *   Function that manually set first component
-     */
-    private void createFirstCompManually(Point3d pos, Vector3d tangent, int alignedPt,
-                                double rad, double arcLen, double devAngle)
-    {
-        MAxisArc nowArc = new MAxisArc();
-        nowArc.genArc(rad, arcLen);
-        nowArc.transRotMAxis(alignedPt, pos, alignedPt, tangent, devAngle);
-
-        comp[1].initSet( nowArc, false, 0); // the MAxisInfo, and the branchUsed
-        //update the endPt and JuncPt information
-        this.endPt[1] = new EndPt_struct(1, 1, comp[1].mAxisInfo.mPts[1], comp[1].mAxisInfo.mTangent[1] , 100.0);
-        this.endPt[2] = new EndPt_struct(1, 51, comp[1].mAxisInfo.mPts[51], comp[1].mAxisInfo.mTangent[51], 100.0);
-        this.nEndPt = 2;
-        this.nJuncPt = 0;
-    }
-    /**
-     *   manually adding new MStick with specific type, with specific instruction
-     */
-
-
-    private boolean Add_MStickManually(int nowComp, int type, double in_rad, double in_arcLen,
-                    int in_endPtLabel, int in_JuncPtLabel,int in_tubeToAttach,
-                    Vector3d in_tangent, double in_devAngle)
-    {
-        //July 10th, the different thing here from Add_MStick is that:
-        // We can manually input the specific orientation and arcLen, rad of the new tube
-        // Add new component to a existing partial MStick
-        // 4 types of addition are possible , specified by type
-        // 1. type == 1: E2E connection
-        // 2. type == 2: E2J connection
-        // 3. type == 3: E2B connection
-        // 4. type == 4: B2E connection
-
-                //shared variable declaration
-        boolean showDebug = false;
-        //final double TangentSaveZone = Math.PI / 4.0;
-        int i;
-
-        if (showDebug)
-        {
-            System.out.println("In AddMStickManually: nowComp " + nowComp + " type: " + type);
-            System.out.println("now nEndPt " + nEndPt + " , and nJuncPt " + nJuncPt);
-        }
-
-        // generate a new Arc with specific, in_rad, in_arcLen
-        MAxisArc nowArc = new MAxisArc();
-        nowArc.genArc(in_rad, in_arcLen);
-
-        if (type == 1) // Adding the new Comp end-to-end
-        {
-           // 1. pick an endPt
-            int nowPtNdx;
-            nowPtNdx = in_endPtLabel; // a input parameter
-
-           // 2. transRot the nowArc to the correct configuration
-            int alignedPt = 1;
-            Point3d finalPos = new Point3d(endPt[nowPtNdx].pos);
-            Vector3d oriTangent = new Vector3d(endPt[nowPtNdx].tangent);
-            Vector3d finalTangent = new Vector3d(in_tangent);
-
-            if ( oriTangent.angle(finalTangent) < TangentSaveZone )
-            {   // angle btw the two tangent vector
-                System.out.println("The angle btw tangent is too tight in type 1 add!");
-            }
-
-            double devAngle = in_devAngle;
-            nowArc.transRotMAxis(alignedPt, finalPos, alignedPt, finalTangent, devAngle);
-
-            // 3. update the EndPT to JuncPt
-            nJuncPt++;
-            int[] compList = { endPt[nowPtNdx].comp, nowComp};
-            int[] uNdxList = { endPt[nowPtNdx].uNdx, 1};
-            Vector3d[] tangentList = { oriTangent, finalTangent};
-            this.JuncPt[nJuncPt] = new JuncPt_struct(2, compList, uNdxList, finalPos, 2, tangentList, compList, endPt[nowPtNdx].rad);
-            comp[nowComp].initSet( nowArc, false, 1); // the MAxisInfo, and the branchUsed
-
-                // 2.5 call the function to check if this new arc is valid
-            /*
-            if (this.checkSkeletonNearby(nowComp) == true)
-            {
-                JuncPt[nJuncPt] = null;
-                nJuncPt--;
-                return false;
-            }
-            */
-            // 4. generate new endPt
-            this.endPt[nowPtNdx].setValue(nowComp, 51, nowArc.mPts[51], nowArc.mTangent[51], 100.0);
-            // 5. save this new Comp
-
-        }
-        else if (type == 2) // end to Junction connection
-        {
-            //1. pick a Junction Pt
-
-            if (this.nJuncPt == 0)
-            {
-                System.out.println("ERROR, should not choose type 2 addition when nJuncPt = 0");
-                return false;
-            }
-            int nowPtNdx = in_JuncPtLabel;
-            //2. transRot the newComp
-            int alignedPt = 1;
-            Point3d finalPos = new Point3d(JuncPt[nowPtNdx].pos);
-            Vector3d finalTangent = new Vector3d(in_tangent);
-
-
-                boolean flag = true;
-                for (i=1; i<= JuncPt[nowPtNdx].nTangent; i++)
-                {
-                    if ( finalTangent.angle( JuncPt[nowPtNdx].tangent[i]) <= TangentSaveZone)
-                        flag = false;
-                }
-                if (flag == false) // i.e. all the tangent at this junction is ok for this new tangent
-                {
-                    //return false;
-                    System.out.println("the tangent too close in type 2 addition");
-                }
-
-
-            double devAngle = in_devAngle;
-            nowArc.transRotMAxis(alignedPt, finalPos, alignedPt, finalTangent, devAngle);
-
-            //3. update the JuncPt & endPt info and add the new Comp
-            JuncPt_struct old_JuncInfo = new JuncPt_struct();
-            old_JuncInfo.copyFrom(JuncPt[nowPtNdx]);
-            this.JuncPt[nowPtNdx].addComp(nowComp, 1, nowArc.mTangent[1]);
-            comp[nowComp].initSet(nowArc, false, 2);
-                // 2.5 call the function to check if this new arc is valid
-            /*
-            if (this.checkSkeletonNearby(nowComp) == true)
-            {
-                JuncPt[nowPtNdx].copyFrom(old_JuncInfo);
-                return false;
-            }
-             */
-            nEndPt++;
-            this.endPt[nEndPt] = new EndPt_struct(nowComp, 51, nowArc.mPts[51], nowArc.mTangent[51], 100.0);
-
-        }
-        else if (type == 3) //end-to-branch connection
-        {
-             // 1. select a existing comp, with free branch
-            int pickedComp = in_tubeToAttach;
-
-            if ( comp[pickedComp].branchUsed == true)
-            {
-                System.out.println("the branch of this tube is already used in type3 add");
-            }
-             // 2. transrot the newComp
-            int alignedPt = 1;
-            int nowUNdx = comp[pickedComp].mAxisInfo.branchPt;
-            Point3d finalPos = new Point3d( comp[pickedComp].mAxisInfo.mPts[nowUNdx]);
-            Vector3d oriTangent1 = new Vector3d( comp[pickedComp].mAxisInfo.mTangent[nowUNdx]);
-            Vector3d oriTangent2 = new Vector3d();
-            Vector3d finalTangent = new Vector3d(in_tangent);
-            oriTangent2.negate(oriTangent1);
-
-            if ( finalTangent.angle(oriTangent1) < TangentSaveZone ||
-                     finalTangent.angle(oriTangent2) < TangentSaveZone    )
-            {
-                    System.out.println("tangent too near in type 3 add tube");
-                    //return false;
-            }
-
-            double devAngle = in_devAngle;
-            nowArc.transRotMAxis(alignedPt, finalPos, alignedPt, finalTangent, devAngle);
-             // 2.5 check if newComp valid
-             // 3. update the JuncPt & endPt info
-            nJuncPt++;
-            int[] compList = { pickedComp, nowComp};
-            int[] uNdxList = { nowUNdx, 1};
-            Vector3d[] tangentList = { oriTangent1, oriTangent2, finalTangent};
-            int[] ownerList = { pickedComp, pickedComp, nowComp};
-            double rad = 100.0;
-            rad = comp[pickedComp].radInfo[1][1]; // if it is existing tube, then there will be a value
-                //otherwise, it should be initial value of 100.0
-            this.JuncPt[nJuncPt] = new JuncPt_struct(2, compList, uNdxList, finalPos, 3, tangentList, ownerList, rad);
-            //JuncPt[nJuncPt].showInfo();
-                // 2.5 call the function to check if this new arc is valid
-            comp[nowComp].initSet(nowArc, false, 3);
-            /*
-            if (this.checkSkeletonNearby(nowComp) == true)
-            {
-                JuncPt[nJuncPt] = null;
-                nJuncPt--;
-                System.out.println("type 3 addition fail");
-                return false;
-            }
-            */
-            nEndPt++;
-            this.endPt[nEndPt] = new EndPt_struct(nowComp, 51, nowArc.mPts[51], nowArc.mTangent[51], 100.0);
-            comp[pickedComp].branchUsed = true;
-
-
-        }
-        else if (type == 4) // add branch to the existing EndPt
-        {
-            // 1. pick an EndPt
-
-            int nowPtNdx = in_endPtLabel;
-
-            // 2. transRot newComp
-            int nowUNdx = nowArc.branchPt;
-            int alignedPt = nowUNdx;
-            Vector3d rev_tangent = new Vector3d();
-            Point3d finalPos = new Point3d(endPt[nowPtNdx].pos);
-            Vector3d oriTangent = new Vector3d(endPt[nowPtNdx].tangent);
-            Vector3d finalTangent = new Vector3d(in_tangent);
-
-            rev_tangent.negate(finalTangent);
-            if ( oriTangent.angle(finalTangent) < TangentSaveZone ||
-                     oriTangent.angle(rev_tangent) < TangentSaveZone    )
-            {
-                System.out.println("tangent too nearby in add tube type 4");
-                //return false;
-            }
-
-            double devAngle = in_devAngle;
-            nowArc.transRotMAxis(alignedPt, finalPos, alignedPt, finalTangent, devAngle);
-            // 2.5 check Nearby Situation
-            // 3. update JuncPt & endPt info
-            nJuncPt++;
-            int[] compList = { endPt[nowPtNdx].comp, nowComp};
-            int[] uNdxList = { endPt[nowPtNdx].uNdx, nowUNdx};
-            Vector3d[] tangentList = { oriTangent, finalTangent, rev_tangent};
-            int[] ownerList = {endPt[nowPtNdx].comp, nowComp, nowComp};
-            double rad;
-            rad = endPt[nowPtNdx].rad;
-            this.JuncPt[nJuncPt] = new JuncPt_struct(2, compList, uNdxList, finalPos, 3, tangentList, ownerList, rad);
-
-            // 2.5 call the function to check if this new arc is valid
-            comp[nowComp].initSet(nowArc, true, 4);
-            /*
-            if (this.checkSkeletonNearby(nowComp) == true)
-            {
-                JuncPt[nJuncPt] = null;
-                nJuncPt--;
-                return false;
-             }
-             */
-            // 4. generate 2 new endPt
-            this.endPt[nowPtNdx].setValue(nowComp, 1, nowArc.mPts[1], nowArc.mTangent[1], 100.0);
-            nEndPt++;
-            this.endPt[nEndPt] = new EndPt_struct(nowComp, 51, nowArc.mPts[51], nowArc.mTangent[51], 100.0);
-
-        }
-
-        if ( showDebug)
-            System.out.println("\n end of add tube func successfully \n");
-        return true;
-        // call the check function to see if the newly added component violate the skeleton nearby safety zone.
-    }
-
-    /**
-     *   Assign the radius value manually
-     */
-
-    private void RadiusAssignManually(double[] JuncPt_radList, double[] endPt_radList,
-                        double[] midPt_radList)
-    {
-
-        double rMin, rMax;
-        double nowRad, u_value, tempX;
-
-
-        //The goal here is to assign the radius value for each tube
-        //I think good way is to follow, assign at JuncPt, endPt, and then middle Pt
-
-        int i, j;
-            // 0. initialize to negative value
-        for (i= 1; i<=nComponent; i++)
-        {
-          comp[i].radInfo[0][1] = -10.0; comp[i].radInfo[1][1] = -10.0; comp[i].radInfo[2][1] = -10.0;
-        }
-            // 1. assign at JuncPt
-        for (i=1; i<=nJuncPt; i++)
-        {
-          if ( JuncPt[i].rad == 100.0) // a whole new JuncPt
-          {
-             rMin = -10.0; rMax = 100000.0;
-                 int nRelated_comp = JuncPt[i].nComp;
-                 for (j = 1 ; j <= nRelated_comp; j++)
-             {
-                    rMin = Math.max( rMin, comp[JuncPt[i].comp[j]].mAxisInfo.arcLen / 10.0);
-                    tempX = Math.min( 0.5 *comp[JuncPt[i].comp[j]].mAxisInfo.rad,
-                 comp[JuncPt[i].comp[j]].mAxisInfo.arcLen / 4.0);
-                    rMax = Math.min( rMax, tempX);
-             }
-                 nowRad = JuncPt_radList[i];
-                 System.out.println("JuncPt" + i +" "+ "min max now are: "+
-                         rMin + " " + rMax + " " + nowRad );
-                 if ( nowRad > rMax || nowRad < rMin)
-                     System.out.println("   rad NOT in legal Range!");
-
-             JuncPt[i].rad = nowRad;
-
-             for (j = 1 ; j <= nRelated_comp ; j++)
-             {
-                      u_value = ((double)JuncPt[i].uNdx[j]-1.0) / (51.0-1.0);
-                      if ( Math.abs( u_value - 0.0) < 0.0001)
-                      {
-                        comp[JuncPt[i].comp[j]].radInfo[0][0] = 0.0;
-                        comp[JuncPt[i].comp[j]].radInfo[0][1] = nowRad;
-                      }
-                      else if ( Math.abs(u_value - 1.0) < 0.0001)
-                      {
-                          comp[JuncPt[i].comp[j]].radInfo[2][0] = 1.0;
-                          comp[JuncPt[i].comp[j]].radInfo[2][1] = nowRad;
-                      }
-                      else // middle u value
-                      {
-                          comp[JuncPt[i].comp[j]].radInfo[1][0] = u_value;
-                          comp[JuncPt[i].comp[j]].radInfo[1][1] = nowRad;
-                      }
-              }
-           }
-        } // loop nJuncPt
-
-        // 2. assign at endPt
-        for ( i = 1 ;  i <= nEndPt ; i++)
-        {
-
-            int nowComp = endPt[i].comp;
-            u_value = ((double)endPt[i].uNdx -1.0 ) / (51.0 -1.0);
-
-            //rMin = mStick.comp(nowComp).arcLen / 10.0;
-            rMin = 0.00001; // as small as you like
-            rMax = Math.min( comp[nowComp].mAxisInfo.arcLen / 4.0, 0.5 * comp[nowComp].mAxisInfo.rad);
-
-            // select a value btw rMin and rMax
-            nowRad = endPt_radList[i];
-
-            System.out.println("endPt" + i +" "+ "min max now are: "+
-                 rMin + " " + rMax + " " + nowRad );
-            if ( nowRad > rMax || nowRad < rMin)
-                System.out.println("    rad NOT in legal Range!");
-
-            endPt[i].rad = nowRad;
-
-            if ( Math.abs( u_value - 0.0) < 0.0001)
-            {
-                comp[nowComp].radInfo[0][0] = 0.0;
-                comp[nowComp].radInfo[0][1] = nowRad;
-            }
-            else if (Math.abs(u_value - 1.0) < 0.0001)
-            {
-                comp[nowComp].radInfo[2][0] = 1.0;
-                comp[nowComp].radInfo[2][1] = nowRad;
-            }
-            else // middle u value
-                 System.out.println( "error in endPt radius assignment");
-
-        }
-
-        // 3. other middle Pt
-          for ( i = 1 ; i <= nComponent ; i++)
-              if ( comp[i].radInfo[1][1] == -10.0 ) // this component need a intermediate value
-            {
-                int branchPt = comp[i].mAxisInfo.branchPt;
-                u_value = ((double)branchPt-1.0) / (51.0 -1.0);
-
-                rMin = comp[i].mAxisInfo.arcLen / 10.0;
-                rMax = Math.min(comp[i].mAxisInfo.arcLen / 4.0, 0.5 * comp[i].mAxisInfo.rad);
-                nowRad = midPt_radList[i];
-
-                System.out.println("midPt" + i +" "+ "min max now are: "+
-                             rMin + " " + rMax + " " + nowRad );
-
-                if ( nowRad > rMax || nowRad < rMin)
-                    System.out.println("    rad NOT in legal Range!");
-
-                comp[i].radInfo[1][0] = u_value;
-                comp[i].radInfo[1][1] = nowRad;
-            }
-
-    }
-
-    /**
-     *    Function that we use to manually determine which stick to add, to posit
-     */
-    public void genMatchStickManually()
-    {
-        int nComp;
-        int i;
-
-        this.cleanData();
-
-        nComp = 8;
-        this.nComponent = nComp;
-
-        for (i=1; i<=nComp; i++)
-                comp[i] = new TubeComp();
-
-        // 1. first component
-        {
-          Point3d finalPos = new Point3d(0,0,0); //always put at origin;
-          Vector3d finalTangent = new Vector3d(1,0,0);
-          int alignedPt = 26; // make it always the center of the mAxis curve
-          double rad = 10000.0;
-          double arcLen = 3.5;
-          double devAngle = 0;
-
-          createFirstCompManually(finalPos, finalTangent, alignedPt, rad, arcLen, devAngle);
-        }
-        /*
-         *   Notice: The range of parameters should be
-         *   rad: 1.0~30.0 or 100000 for str8
-         *   ArcLen: 2.0 ~ Min( PI * rad, 5.0)
-         *   in_endPtLabel is useful for type 1 & 4 addition
-         *   in_JuncPtLabel is useful for type 2 addition, to junciton
-         *   in_tubeToAttach is useful for type 3 addition to a branchPt
-         *   devAngle = 0 ~ 2pi
-         */
-
-        // 2.2 adding comp2
-        {
-            int nowComp = 2;
-            int type = 1; // end-to-end
-            double rad = 10000.0, arcLen = 3.4;
-            int endPtLabel = 2, JuncPtLabel=-1, tubeToAttach = -1;
-            double devAngle = 0.0;
-            Vector3d tangent = new Vector3d(0.5,2,0);
-            tangent.normalize();
-
-            Add_MStickManually(nowComp, type, rad, arcLen, endPtLabel, JuncPtLabel,
-                tubeToAttach, tangent, devAngle);
-        }
-
-        // 2.3, adding comp 3
-        {
-            int nowComp = 3;
-            int type = 1; // end-to-end
-            double rad = 100000.0, arcLen = 3.0;
-            int endPtLabel = 1, JuncPtLabel=-1, tubeToAttach = -1;
-            double devAngle = 0.0;
-            Vector3d tangent = new Vector3d(0.1,-0.8, 0.2);
-            //Vector3d tangent = new Vector3d(-0.3, -0.8, 1);
-            tangent.normalize();
-
-            Add_MStickManually(nowComp, type, rad, arcLen, endPtLabel, JuncPtLabel,
-                tubeToAttach, tangent, devAngle);
-        }
-
-        // 2.4, adding comp 4
-        {
-            int nowComp = 4;
-            int type = 2; // end-to-end
-            double rad = 100000.0, arcLen = 3.0;
-            int endPtLabel = -1, JuncPtLabel= 2, tubeToAttach = -1;
-            double devAngle = 0.0;
-            Vector3d tangent = new Vector3d(-0.3,-0.8, -0.2);
-            //Vector3d tangent = new Vector3d(0.3, -0.8, -1);
-            tangent.normalize();
-
-            Add_MStickManually(nowComp, type, rad, arcLen, endPtLabel, JuncPtLabel,
-                tubeToAttach, tangent, devAngle);
-        }
-
-        // 2.5, adding comp 5
-        {
-            int nowComp = 5;
-            int type = 2; // end-to-junc
-            double rad = 100000.0, arcLen = 3.0;
-            int endPtLabel = -1, JuncPtLabel= 1, tubeToAttach = -1;
-            double devAngle = 0.0;
-            Vector3d tangent = new Vector3d(0.2,-0.8, 0.2);
-            tangent.normalize();
-
-            Add_MStickManually(nowComp, type, rad, arcLen, endPtLabel, JuncPtLabel,
-                tubeToAttach, tangent, devAngle);
-        }
-
-        // 2.6, adding comp 6
-        {
-            int nowComp = 6;
-            int type = 2; // end-to-junc
-            double rad = 100000.0, arcLen = 3.0;
-            int endPtLabel = -1, JuncPtLabel= 1, tubeToAttach = -1;
-            double devAngle = 0.0;
-            Vector3d tangent = new Vector3d(-0.3,-1.8, -0.2);
-            tangent.normalize();
-
-            Add_MStickManually(nowComp, type, rad, arcLen, endPtLabel, JuncPtLabel,
-                tubeToAttach, tangent, devAngle);
-        }
-
-        // 2.8, adding comp 7, tail
-        {
-            int nowComp = 7;
-            int type = 2; // end-to-junc
-            double rad = 1.3, arcLen = 2.7;
-            int endPtLabel = -1, JuncPtLabel= 2, tubeToAttach = -1;
-            double devAngle = Math.PI;
-            Vector3d tangent = new Vector3d(-1, 0.5, 0);
-            tangent.normalize();
-
-            Add_MStickManually(nowComp, type, rad, arcLen, endPtLabel, JuncPtLabel,
-                tubeToAttach, tangent, devAngle);
-        }
-
-        // 2.8, adding comp 7, head
-        {
-            int nowComp = 8;
-            int type = 1; // end-to-end
-            double rad = 10000.0, arcLen = 1.7;
-            int endPtLabel = 2, JuncPtLabel= 0, tubeToAttach = -1;
-            double devAngle = 0;
-            Vector3d tangent = new Vector3d(1.7, -2.5, 0);
-            tangent.normalize();
-
-            Add_MStickManually(nowComp, type, rad, arcLen, endPtLabel, JuncPtLabel,
-                tubeToAttach, tangent, devAngle);
-        }
-
-        // 3. apply the radius value and calculate the skin
-        //Assign the radius value
-        double[] JuncPtR = new double[nJuncPt+1];
-        double[] endPtR = new double[nEndPt+1];
-        double[] midPtR = new double[nComponent+1];
-
-        { // just assign by hand
-            JuncPtR[1] = 1.0;
-            JuncPtR[2] = 1.0;
-            JuncPtR[3] = 0.4;
-            //JuncPt_radList[2] = 1.0;
-
-            endPtR[1] = 0.45;
-            endPtR[2] = 0.65;
-            endPtR[3] = 0.45;
-            endPtR[4] = 0.45;
-            endPtR[5] = 0.45;
-            endPtR[6] = 0.03;
-
-            midPtR[1] = 1.2;
-            midPtR[2] = 0.43;
-            midPtR[3] = 0.45;
-            midPtR[4] = 0.45;
-            midPtR[5] = 0.45;
-            midPtR[6] = 0.45;
-            midPtR[7] = 0.45;
-            midPtR[8] = 0.45;
-
-        }
-        this.RadiusAssignManually(JuncPtR, endPtR, midPtR);
-        // 4. Apply the radius value onto each component
-
-        boolean validShape = true;
-        for (i=1; i<=nComponent; i++)
-        {
-            if( this.comp[i].RadApplied_Factory() == false) // a fail application
-            {
-               validShape = false;
-               System.out.println("skin generation fail in manually application!");
-            }
-        }
-
-        // 5. check if the final shape is not working ( collide after skin application)
-
-        if ( this.validMStickSize() ==  false)
-        {
-            validShape = false;
-            System.out.println("\n FAIL the MStick size check in manually gen\n");
-        }
-        /*
-        if ( this.finalTubeCollisionCheck() == true)
-        {
-            validShape = false;
-            System.out.println("\n FAIL the final Tube collsion Check in maually gen\n");
-        }
-        */
-
-        if ( validShape == false)
-        {
-            System.out.println("not successful generation, plz check");
-            return;
-        }
-
-
-        this.finalRotation = new double[3];
-        finalRotation[0] = 0.0;
-        finalRotation[1] = 0.0;
-        finalRotation[2] = 0.0;
-
-        //this.finalRotateAllPoints(finalRotation[0], finalRotation[1], finalRotation[2]);
-
-
-        boolean res = this.smoothizeMStick();
-        if ( res == false) // success to smooth
-        {
-            System.out.println("the manual input parameters fail!");
-        }
-       this.parentStick = new MatchStick();
-
-
-       //write the result into spec and then write into a file
-       MStickSpec g = new MStickSpec();
-       g.setMStickInfo(this);
-//       g.writeInfo2File();
-
-//       ShapeSpec nowSpec =new ShapeSpec();
-//       nowSpec.setMAxisSpec(this);
-//       nowSpec.writeInfo2File("./sample/nowOut.xml");
-
-    }
 
     public void genMatchStickFromFile(String fname) {
     	String in_specStr;
@@ -1224,8 +615,6 @@ public class MatchStick implements Drawable
                     //this.nComponent = -1;
         }
 
-        this.parentStick = new MatchStick();
-
     }
     /**
      *    Function that we use to read a file with XML spec,
@@ -1361,9 +750,6 @@ public class MatchStick implements Drawable
 
 
        }
-
-//       System.out.println("  End random MAxis Shape gen.\n");
-       this.parentStick = new MatchStick();
 
      }
 
@@ -2022,11 +1408,11 @@ public class MatchStick implements Drawable
                     System.out.println("p1 "+ p1);
                     System.out.println("p2 "+ p2);
                     System.out.println("dist: "+ nowdist);
-                    if ( tempStick != null)
-                    {
-                        System.out.println("old p1 " + tempStick.comp[compA].mAxisInfo.mPts[i]);
-                        System.out.println("old p2 " + tempStick.comp[compB].mAxisInfo.mPts[j]);
-                    }
+					// if ( tempStick != null)
+					// {
+					//     System.out.println("old p1 " + tempStick.comp[compA].mAxisInfo.mPts[i]);
+					// System.out.println("old p2 " + tempStick.comp[compB].mAxisInfo.mPts[j]);
+					// }
 
                 }
                             return true;
@@ -2327,13 +1713,6 @@ public class MatchStick implements Drawable
         }
 
     /**
-        Set the shape one step back to its parent
-    */
-    public void setBackToParent()
-    {
-        this.copyFrom(this.parentStick);
-    }
-    /**
         A public function that will start generating an offspring of this existing shape
         The parent is the current shape.
         The result will be stored in this object
@@ -2354,8 +1733,8 @@ public class MatchStick implements Drawable
         }
         MatchStick oldCopy_stick = new MatchStick();
         oldCopy_stick.copyFrom( this);
-        this.parentStick = new MatchStick();
-        this.parentStick.copyFrom(this); // set the parentStick
+		// this.parentStick = new MatchStick();
+		// this.parentStick.copyFrom(this); // set the parentStick
         // 4 possible task for each tube
         // [ 1.nothing 2.replace whole 3. fine chg 4. Remove it]
         // The distribution will be different for center & leaf stick
@@ -2971,8 +2350,6 @@ public class MatchStick implements Drawable
                 break; //give up the junction change
         } // while loop
     }
-
-
 
     /**
         subFunction of: (replaceComponent, fineTuneComponent) <BR>
@@ -4046,7 +3423,7 @@ public class MatchStick implements Drawable
      *   This function should only be called in the analysis
      *   (after the electrophysio exp...)
      */
-    public void modifyMAxisFinalInfo()
+    private void modifyMAxisFinalInfo()
     {
         //May 21st , I want to do the same
         // rotate, scale, and translateinZ for the components
@@ -4183,7 +3560,7 @@ public class MatchStick implements Drawable
         function that will merge all vect_info from each tube into one smooth, water-tight vect_info piece
     */
 
-    public boolean smoothizeMStick()
+    private boolean smoothizeMStick()
     {
         int i;
         boolean showDebug =false;
@@ -4698,9 +4075,6 @@ public class MatchStick implements Drawable
 
         if ( shiftOriginToSurface) // a boolean
             this.finalShiftinDepth = this.obj1.translateVertexOnZ(scaleForMAxisShape);
-
-
-
     }
 
 	@Override
@@ -4772,8 +4146,32 @@ public class MatchStick implements Drawable
     	textureType = tt;
     }
     
-} //end of class
-
+    public MStickObj4Smooth getSmoothObj() {
+    	return obj1;
+    }
+    
+    public int getNComponent() {
+    	return nComponent;
+    }
+    public int getNEndPt() {
+    	return nEndPt;
+    }
+    public int getNJuncPt() {
+    	return nJuncPt;
+    }
+    public EndPt_struct getEndPtStruct(int i) {
+    	return endPt[i];
+    }
+    public JuncPt_struct getJuncPtStruct(int i) {
+    	return JuncPt[i];
+    }
+    public TubeComp getTubeComp(int i) {
+    	return comp[i];
+    }
+    public double getFinalRotation(int i) {
+    	return finalRotation[i];
+    }
+}
 
 
 class EndPt_struct

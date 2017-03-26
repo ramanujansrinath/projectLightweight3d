@@ -6,20 +6,16 @@ public class MAxisInfo
 	public int nEndPt;
 	public int nJuncPt;
 	public double[] finalRotation = new double[3];
-	//public JuncPt_Info[] JuncPt;
 	public EndPt_Info[] EndPt;
 	public JuncPt_Info[] JuncPt;
     public TubeInfo[] Tube;
-	//private TubeComp[] comp = new TubeComp[9];
-	//private EndPt_struct[] endPt = new EndPt_struct[30]; // 30 is just an arbitrary large enough number
-	//private JuncPt_struct[] JuncPt = new JuncPt_struct[30];	
-	//private MStickObj4Smooth obj1;
+
 	public void setMAxisInfo(MatchStick inStick)
 	{
 		int i;
-		this.nComponent = inStick.nComponent;
-		this.nEndPt = inStick.nEndPt;
-		this.nJuncPt = inStick.nJuncPt;
+		this.nComponent = inStick.getNComponent();
+		this.nEndPt = inStick.getNEndPt();
+		this.nJuncPt = inStick.getNJuncPt();
 		
 		this.JuncPt = new JuncPt_Info[nJuncPt+1];
 		this.EndPt  = new EndPt_Info[nEndPt+1];
@@ -27,23 +23,23 @@ public class MAxisInfo
 		for (i=1; i<= nEndPt; i++)
 		{
 			EndPt[i] = new EndPt_Info();
-			EndPt[i].setEndPtInfo( inStick.endPt[i]);
+			EndPt[i].setEndPtInfo(inStick.getEndPtStruct(i));
 			
 		}
 		for (i=1; i<= nJuncPt; i++)
 		{
 			JuncPt[i] = new JuncPt_Info();
-			JuncPt[i].setJuncPtInfo( inStick.JuncPt[i]);
+			JuncPt[i].setJuncPtInfo( inStick.getJuncPtStruct(i));
 		}
 		
 		for (i=1; i<= nComponent; i++)
 		{
 			Tube[i] = new TubeInfo();
-			Tube[i].setTubeInfo(inStick.comp[i]);
+			Tube[i].setTubeInfo(inStick.getTubeComp(i));
 		}
 		
 		for (i=0; i<3; i++)
-			finalRotation[i] = inStick.finalRotation[i];
+			finalRotation[i] = inStick.getFinalRotation(i);
 		
 	}
 }
