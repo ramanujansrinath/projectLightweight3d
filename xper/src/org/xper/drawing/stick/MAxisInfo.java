@@ -1,7 +1,6 @@
 package org.xper.drawing.stick;
 
-public class MAxisInfo
-{
+public class MAxisInfo {
 	public int nComponent;        
 	public int nEndPt;
 	public int nJuncPt;
@@ -10,36 +9,29 @@ public class MAxisInfo
 	public JuncPt_Info[] JuncPt;
     public TubeInfo[] Tube;
 
-	public void setMAxisInfo(MatchStick inStick)
-	{
-		int i;
-		this.nComponent = inStick.getNComponent();
-		this.nEndPt = inStick.getNEndPt();
-		this.nJuncPt = inStick.getNJuncPt();
+	public void setMAxisInfo(MatchStick inStick) {
+		nComponent = inStick.getNComponent();
+		nEndPt = inStick.getNEndPt();
+		nJuncPt = inStick.getNJuncPt();
 		
-		this.JuncPt = new JuncPt_Info[nJuncPt+1];
-		this.EndPt  = new EndPt_Info[nEndPt+1];
-		this.Tube = new TubeInfo[nComponent+1];
-		for (i=1; i<= nEndPt; i++)
-		{
+		JuncPt = new JuncPt_Info[nJuncPt+1];
+		EndPt  = new EndPt_Info[nEndPt+1];
+		Tube = new TubeInfo[nComponent+1];
+		
+		for (int i=1; i<= nEndPt; i++) {
 			EndPt[i] = new EndPt_Info();
 			EndPt[i].setEndPtInfo(inStick.getEndPtStruct(i));
-			
 		}
-		for (i=1; i<= nJuncPt; i++)
-		{
+		for (int i=1; i<= nJuncPt; i++) {
 			JuncPt[i] = new JuncPt_Info();
 			JuncPt[i].setJuncPtInfo( inStick.getJuncPtStruct(i));
 		}
-		
-		for (i=1; i<= nComponent; i++)
-		{
+		for (int i=1; i<= nComponent; i++) {
 			Tube[i] = new TubeInfo();
 			Tube[i].setTubeInfo(inStick.getTubeComp(i));
 		}
 		
-		for (i=0; i<3; i++)
+		for (int i=0; i<3; i++)
 			finalRotation[i] = inStick.getFinalRotation(i);
-		
 	}
 }

@@ -14,9 +14,9 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.xper.drawing.drawables.Drawable;
 
-public class MatchStick implements Drawable
-{
+public class MatchStick implements Drawable {
     final double scaleForMAxisShape  = 30.0;
+    
     private int showMode = 1;
     private double[] finalRotation;
     private Point3d finalShiftinDepth;
@@ -1713,28 +1713,17 @@ public class MatchStick implements Drawable
         }
 
     /**
-        A public function that will start generating an offspring of this existing shape
+    A public function that will start generating an offspring of this existing shape
         The parent is the current shape.
         The result will be stored in this object
     */
-    public boolean mutate(int debugParam)
-    {
-
+    public boolean mutate(int debugParam) {
         final int MaxMutateTryTimes = 10;
         final int MaxAddTubeTryTimes = 15;
         final int MaxCompNum = 8;
         final int MinCompNum = 2;
         final int MaxDeletionNum = 1;
-        boolean showDebug = false;
 
-        if ( showDebug)
-        {
-            System.out.println("  Now start MAxis Mutation: ");
-        }
-        MatchStick oldCopy_stick = new MatchStick();
-        oldCopy_stick.copyFrom( this);
-		// this.parentStick = new MatchStick();
-		// this.parentStick.copyFrom(this); // set the parentStick
         // 4 possible task for each tube
         // [ 1.nothing 2.replace whole 3. fine chg 4. Remove it]
         // The distribution will be different for center & leaf stick
@@ -1743,18 +1732,13 @@ public class MatchStick implements Drawable
         double[] prob_center = {0.6, 0.6, 1.0, 1.0};
         double[] prob_addNewTube = { 0.3333, 0.6666, 1.0}; // 1/3 no add , 1/3 add 1, 1/3 add 2 tubes
         
-        if ( this.nComponent <=3)
-        {
+        if ( this.nComponent <=3) {
             prob_addNewTube[0] = 0.3;
             prob_addNewTube[1] = 1.0;
-        }
-        else if ( this.nComponent >=4 && this.nComponent <=5)
-        {
+        } else if ( this.nComponent >=4 && this.nComponent <=5) {
             prob_addNewTube[0] = 0.5;
             prob_addNewTube[1] = 1.0;
-        }
-        else if ( this.nComponent >=6)
-        {
+        } else if ( this.nComponent >=6) {
             prob_addNewTube[0] = 0.7;
             prob_addNewTube[1] = 1.0;
         }
@@ -1766,23 +1750,20 @@ public class MatchStick implements Drawable
         int[] task4Tube = new int[nComponent+1];
         int[] task4Tube_backup = new int[nComponent+1];
         int nAddTube, nRemoveTube, nResultTube;
-        boolean showDebugInfo = false;
         // 1. decide what kind of modification should go on
         int nChgTotal;
         int minChgTotal = 2;
         int maxChgTotal = 3;
-        while (true)
-        {
+        while (true) {
             boolean noChgFlg = true;
-            for (i=1; i<=nComponent; i++)
-            {
+            for (i=1; i<=nComponent; i++) {
                 if (  LeafBranch[i] == true)
                     task4Tube[i] = stickMath_lib.pickFromProbDist( prob_leaf);
                 else
                     task4Tube[i] = stickMath_lib.pickFromProbDist( prob_center);
 
-                if (task4Tube[i] != 1) noChgFlg = false; // at least one chg will occur
-
+                if (task4Tube[i] != 1) 
+                	noChgFlg = false; // at least one chg will occur
             }
                 nAddTube = stickMath_lib.pickFromProbDist( prob_addNewTube) - 1;
             nRemoveTube =0;
@@ -1807,88 +1788,42 @@ public class MatchStick implements Drawable
             if ( noChgFlg == false && nResultTube <= MaxCompNum  && nResultTube >= MinCompNum
                 && nRemoveTube <= MaxDeletionNum ) // a legal condition
                 break;
-
-            if (showDebugInfo)
-            {
-                if (noChgFlg == true)
-                    System.out.println("        No chg is found...so need re-try");
-
-            }
         }
 
         //debug
-        if (debugParam == 1)
-        {
-
+        if (debugParam == 1) {
             //only remove 1 component each time
             for (i=1; i<=nComponent; i++)
-            {
                 task4Tube[i] = 1;
-            }
-
-            while (true)
-            {
+            while (true) {
                 i =stickMath_lib.randInt(1, nComponent);
-                if (LeafBranch[i] == true)
-                {
+                if (LeafBranch[i] == true) {
                     task4Tube[i] = 4;
                     break;
                 }
             }
-
             nRemoveTube = 1;
             nAddTube = 0;
-        }
-        else if ( debugParam == 2)
-        {
+        } else if ( debugParam == 2) {
             nRemoveTube = 0;
             for (i=1; i<=nComponent; i++)
                 task4Tube[i] = 1;
-
-
             nAddTube = 1;
-        }
-        else if ( debugParam == 3)
-        {
+        } else if ( debugParam == 3) {
             nRemoveTube = 0;
             nAddTube = 0;
             for (i=1; i<=nComponent; i++)
                 task4Tube[i] = 1;
-            int randComp  =stickMath_lib.randInt(1, nComponent);
+            int randComp  = stickMath_lib.randInt(1, nComponent);
             task4Tube[randComp] = 2;
-        }
-        else if ( debugParam == 4)
-        {
+        } else if ( debugParam == 4) {
             nRemoveTube = 0;
             nAddTube = 0;
             for (i=1; i<=nComponent; i++)
                 task4Tube[i] = 1;
             int randComp  =stickMath_lib.randInt(1, nComponent);
-            //debug
-            //randComp = 1;
             task4Tube[randComp] = 3;
-
         }
-//
-
-
-        if (showDebugInfo) // show out what to do on each tube
-        {
-            System.out.println("        The task for the tubes are:");
-            for (i=1; i<=nComponent; i++)
-            {
-                if (task4Tube[i] == 1)
-                    System.out.println("            Tube " + i + " --> do nothing");
-                else if ( task4Tube[i] == 2)
-                    System.out.println("            Tube " + i + " --> replace whole tube");
-                else if ( task4Tube[i] == 3)
-                    System.out.println("            Tube " + i + " --> fine morph");
-                else if ( task4Tube[i] == 4)
-                    System.out.println("            Tube " + i + " --> remove it");
-            }
-            System.out.println("            Add " + nAddTube +" at the end \n");
-        }
-
 
         // Now start the part of really doing the morphing
 
@@ -1897,24 +1832,22 @@ public class MatchStick implements Drawable
         // but, sometimes, some details will fail.
         // what I would like to do is try the morph several times before give up
 
-        //March 10th 2009.
-        //This is a bug I found after recording for a while
-        //everytime we should load the task4Tube from the back
-        //since if we re-do the mutate, the task4Tube might already
-        //change during the previous manipulation.
+        // March 10th 2009.
+        // This is a bug I found after recording for a while
+        // everytime we should load the task4Tube from the back
+        // since if we re-do the mutate, the task4Tube might already
+        // change during the previous manipulation.
+        
         for (i=1; i<=nComponent; i++)
             task4Tube_backup[i] = task4Tube[i];
 
         int mutateTryTimes = 1;
         boolean successMutateTillNow;
-        for (mutateTryTimes = 1; mutateTryTimes <= MaxMutateTryTimes; mutateTryTimes++)
-        {
+        for (mutateTryTimes = 1; mutateTryTimes <= MaxMutateTryTimes; mutateTryTimes++) {
             //load the backup of task4Tube
             for (i=1; i<=nComponent; i++)
                 task4Tube[i] = task4Tube_backup[i];
 
-            if ( showDebug)
-                System.out.println("In mutate, try times: " + mutateTryTimes);
             successMutateTillNow = true;
             //1. remove the stick
             boolean[] removeFlg = new boolean[nComponent+1];
@@ -1922,20 +1855,18 @@ public class MatchStick implements Drawable
                 if (task4Tube[i] == 4)
                     removeFlg[i] = true;
             old_nComp = nComponent; // since this number will chg later in removeComponent
+            // 2. fine tune and replacement
+            // 2.1 remap the task4Tube
             if (nRemoveTube > 0) // else , we can skip this procedure
                 this.removeComponent( removeFlg);
-
-            //2. fine tune and replacement
-            //  2.1 remap the task4Tube
-            {
-                int counter =1 ;
-                for (i=1; i<= old_nComp; i++)
-                    if ( task4Tube[i] != 4)
-                        task4Tube[counter++] = task4Tube[i];
-            }
-            //2.2 really doing the fine tune & replace
-            for (i=1; i<= nComponent; i++)
-            {
+            
+            int counter = 1;
+            for (i=1; i<= old_nComp; i++)
+                if ( task4Tube[i] != 4)
+                    task4Tube[counter++] = task4Tube[i];
+        
+            // 2.2 really doing the fine tune & replace
+            for (i=1; i<= nComponent; i++) {
                 boolean res = true;
                 if (task4Tube[i] == 2) // replace
                     res = this.replaceComponent(i);
@@ -1943,36 +1874,25 @@ public class MatchStick implements Drawable
                     res = this.fineTuneComponent(i);
 
                 // if res == false, we want to go out to big Trial loop & try again
-                if ( res == false)
-                {
-                    this.copyFrom( oldCopy_stick);
+                if (!res) {
                     successMutateTillNow = false;
-                    //return false;
                 }
             }
             if ( successMutateTillNow == false) continue;
 
-            //3. Add new tube on the shape
+            // 3. Add new tube on the shape
             // we will try to add several times locally
-            if (nAddTube > 0)
-            {
+            if (nAddTube > 0) {
                 MatchStick tempStoreStick = new MatchStick();
                 tempStoreStick.copyFrom(this);
                 int addtube_trytime = 0;
-                while (true)
-                {
+                while (true) {
                     boolean res = this.addTubeMutation(nAddTube);
-                    if ( res == true)
+                    if (res)
                         break;
-                    else // fail, restore
-                    {
-//                        System.out.println("\nIn mutation: add tube, restore info, trytime = " + addtube_trytime);
+                    else {
                         addtube_trytime++;
-                        if ( addtube_trytime > MaxAddTubeTryTimes)
-                        {
-                            System.out.println("\nfail to add tube (try 15 times), give up\n");
-                            this.copyFrom( oldCopy_stick);
-                            //return false; // directly regard as a fail
+                        if ( addtube_trytime > MaxAddTubeTryTimes) {
                             successMutateTillNow = false;
                             break;
                         }
@@ -1980,38 +1900,27 @@ public class MatchStick implements Drawable
                     this.copyFrom(tempStoreStick);
                 }
             }
-            if ( successMutateTillNow == false) continue;
+            if (!successMutateTillNow) 
+            	continue;
 
-            // 5. reassign the radius value at junction Pt
+            // 5. reassign the radius value at junction point
             this.MutateSUB_reAssignJunctionRadius();
 
-            // 6. translate the shape, so that the first comp is centered at origin.
+            // 6. translate the shape, so that the first component is centered at origin.
             this.centerShapeAtOrigin(-1);
 
-            if ( this.validMStickSize() == false)
-            {
-                this.copyFrom( oldCopy_stick);
-                //return false;
+            if (!this.validMStickSize()) 
                 successMutateTillNow = false;
-            }
-            if ( successMutateTillNow == false) continue;
+            
+            if (!successMutateTillNow)
+            	continue;
 
             this.changeFinalRotation();
 
-            //Final. smoothize final result
-            boolean res = this.smoothizeMStick();
-            if ( res == true) // success to smooth
-                return true;
-            else
-            {
-//                System.out.println("In mutate shape, the final smooth fail!!!!!!!!\n.....");
-                this.copyFrom( oldCopy_stick);
-                successMutateTillNow = false;
-            }
-
+            return this.smoothizeMStick();
         }
 
-        return false; // after try mutate loop 10 times
+        return false;
     }
 
     /**
@@ -4174,8 +4083,7 @@ public class MatchStick implements Drawable
 }
 
 
-class EndPt_struct
-{
+class EndPt_struct {
       public int comp, uNdx; // identify which component's which uNdx contribute to this endPt
       public Point3d pos = new Point3d();
       public Vector3d tangent = new Vector3d();
@@ -4223,8 +4131,8 @@ class EndPt_struct
       return "End Pt Info: (comp,uNdx) = " + comp +" , " +uNdx + "\n  pos = " + pos + "\n  tangent = " + tangent + "  rad = " + rad;
       }
 }
-class JuncPt_struct
-{
+
+class JuncPt_struct {
       public int nComp, nTangent;
       public int[] comp = new int[20];
       public int[] uNdx = new int[20];
@@ -4343,5 +4251,4 @@ class JuncPt_struct
 //        System.out.println(" tangent : " + tangent[i] + " belongs to " + tangentOwner[i]);
 //   System.out.println("radius is " + rad +"\n----------------------------------\n\n");
       }
-
 }

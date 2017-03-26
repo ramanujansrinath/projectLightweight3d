@@ -1075,9 +1075,8 @@ public class MStickObj4Smooth {
 /**
     class that store the intersect boundary info of an MStickobj4Smooth
 */
-class IntersectBoundaryInfo
-{
-    // should inclue the outerRim info & the vect_type info
+class IntersectBoundaryInfo {
+    // should include the outerRim info & the vect_type info
     public int nRimPt;
     public Point3d[] rim_Pt;
     public Point3d[] rim_Pt_smoothed;
@@ -1173,8 +1172,7 @@ class IntersectBoundaryInfo
 
 }
 
-class MStickObj4Smooth_staticLib
-{
+class MStickObj4Smooth_staticLib {
    /**
     Function that calculate the Intersect patch btw two MStickObj4Smooth <BR>
         This will cover the old Matlab code : (1) calcIntersectBoundary.m <BR>
@@ -1997,8 +1995,6 @@ class MStickObj4Smooth_staticLib
     }
     return dist;
    }
-
-
 }
 
 
