@@ -20,8 +20,10 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.GLU;
 import org.xper.drawing.drawables.Drawable;
 
+import org.jtransforms.fft.DoubleFFT_2D;
+
 public class MatchStick implements Drawable {
-    final double scaleForMAxisShape  = 30.0;
+    final double scaleForMAxisShape  = 20.0;
     
     private double[] finalRotation;
     private Point3d finalShiftinDepth;
@@ -4046,7 +4048,49 @@ public class MatchStick implements Drawable {
     }
     
     protected void redraw() {
-        int minX, minY, maxX, maxY;
+    	int[] stimBox = getStimBox(); // {199,199,180,180}; // 
+    	int minX  = stimBox[0], minY  = stimBox[1];
+    	int nPixX = stimBox[2], nPixY = stimBox[3];
+        
+    	GL11.glBegin(GL11.GL_LINE_LOOP);
+			GL11.glVertex2d(boundingBox[0].x, boundingBox[0].y);
+			GL11.glVertex2d(boundingBox[0].x, boundingBox[1].y);
+			GL11.glVertex2d(boundingBox[1].x, boundingBox[1].y);
+			GL11.glVertex2d(boundingBox[1].x, boundingBox[0].y);
+		GL11.glEnd();
+    	
+    	System.out.println("lower left: " + minX + ", " + minY);
+    	System.out.println("size: " + nPixX + " x " + nPixY);
+    	
+        ByteBuffer color = ByteBuffer.allocateDirect(nPixX*nPixY);
+        GL11.glReadPixels(minX,minY, nPixX, nPixY, GL11.GL_RED, GL11.GL_UNSIGNED_BYTE, color);
+
+        String pixelsStr = pixelToStr(color, nPixX,nPixY);
+        
+        double[][] pixels = pixelToArray(color, nPixX,nPixY);
+        
+        DoubleFFT_2D fftObj = new DoubleFFT_2D(nPixX, nPixY);
+        fftObj.complexForward(pixels);
+		
+		try {
+		    BufferedWriter outPix = new BufferedWriter(new FileWriter("/Users/ecpc32/Desktop/temp/pix.txt"));
+		    outPix.write(pixelsStr);
+		    outPix.flush();
+		    outPix.close();
+		    
+		    BufferedWriter outSiz = new BufferedWriter(new FileWriter("/Users/ecpc32/Desktop/temp/siz.txt"));
+		    outSiz.write(nPixX + "," + nPixY + "\n");
+		    outSiz.write(minX + "," + minY + "\n");
+		    
+		    outSiz.flush();
+		    outSiz.close();
+		} catch (Exception e) {
+		    System.out.println(e);
+		}
+    }
+
+    private int[] getStimBox() {
+    	int minX, minY, maxX, maxY;
         
         ByteBuffer viewport_byte = ByteBuffer.allocateDirect(16 * 4);
         viewport_byte.order(ByteOrder.LITTLE_ENDIAN);
@@ -4064,62 +4108,59 @@ public class MatchStick implements Drawable {
         GL11.glGetFloat( GL11.GL_PROJECTION_MATRIX, projection );
         
         FloatBuffer minPos = FloatBuffer.allocate(3);
-        GLU.gluProject((float)boundingBox[0].x,(float)boundingBox[0].y,(float)boundingBox[0].z,modelview,projection,viewport,minPos);
+//        (float)boundingBox[0].z
+        GLU.gluProject((float)boundingBox[0].x,(float)boundingBox[0].y,0.0f,modelview,projection,viewport,minPos);
         
         FloatBuffer maxPos = FloatBuffer.allocate(3);
-        GLU.gluProject((float)boundingBox[1].x,(float)boundingBox[1].y,(float)boundingBox[1].z,modelview,projection,viewport,maxPos);
+//        (float)boundingBox[1].z
+        GLU.gluProject((float)boundingBox[1].x,(float)boundingBox[1].y,0.0f,modelview,projection,viewport,maxPos);
         
-        minX = (int)minPos.get(0) - 1;
-        minY = (int)minPos.get(1) - 1;
+        minX = (int)minPos.get(0) - 10;
+        minY = (int)minPos.get(1) - 10;
         
-        maxX = (int)maxPos.get(0) + 1;
-        maxY = (int)maxPos.get(1) + 1;
+        maxX = (int)maxPos.get(0) + 10;
+        maxY = (int)maxPos.get(1) + 10;
         
         int nPixX = maxX - minX;
         int nPixY = maxY - minY;
         
-        ByteBuffer color = ByteBuffer.allocateDirect(nPixX*nPixY*3);
-        GL11.glReadPixels(minX,minY, nPixX, nPixY, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, color);
-
-        String pixels = pixelToStr(color, nPixX,nPixY);
-
-        try {
-            BufferedWriter outPix = new BufferedWriter(new FileWriter("/Users/ecpc32/Desktop/temp/pix.txt"));
-            outPix.write(pixels);
-            outPix.flush();
-            outPix.close();
-            
-            BufferedWriter outSiz = new BufferedWriter(new FileWriter("/Users/ecpc32/Desktop/temp/siz.txt"));
-            outSiz.write(nPixX + "," + nPixY + "\n");
-            outSiz.write(minX + "," + minY + "\n");
-            outSiz.write(maxX + "," + maxY + "\n");
-            
-            outSiz.flush();
-            outSiz.close();
-        } catch (Exception e) {
-            System.out.println(e);
-        }
-    }
-
-    private String pixelToStr(ByteBuffer color, int nPixX, int nPixY) {
-        String str = new String();
-        color.rewind();
-        for(int i=0; i<nPixX*nPixY; i++) {
-            int a = (color.get() & 0xff);
-            int b = (color.get() & 0xff);
-            int c = (color.get() & 0xff);
-//          if (a != 127)
-                str = str + a + "\n";
-             // + "," + (color.get() & 0xff) + "," + (color.get() & 0xff)
-
-        }
-        return str;
-    }
-
-    public Point3d[] getBoundingBox() {
-        return boundingBox;
+        int[] stimBox = {minX, minY, nPixX, nPixY};
+        return stimBox;
     }
     
+	private String pixelToStr(ByteBuffer color, int nPixX, int nPixY) {
+        String str = new String();
+        color.rewind();
+        for(int i=0; i<nPixY; i++) {
+			for (int j=0; j<nPixX; j++) {
+		        int a = color.get() & 0xff;
+		        if (j<nPixX-1)
+		        	str = str + a + ",";
+		        else
+		        	str = str + a;
+			}
+			str = str + "\n";
+		}
+        return str;
+    }
+    
+	private double[][] pixelToArray(ByteBuffer color, int nPixX, int nPixY) {
+    	double[][] pixels = new double[nPixX][2*nPixY];
+        color.rewind();
+        
+        for(int i=0; i<nPixY; i++) {
+			for (int j=0; j<nPixX; j++) {
+		        int a = color.get() & 0xff;
+		        pixels[j][2*i] = a;
+	            pixels[j][2*i + 1] = 0;
+			}
+			
+		}
+        return pixels;
+    }
+    
+	
+	
     public MStickObj4Smooth getSmoothObj() {
     	return obj1;
     }
