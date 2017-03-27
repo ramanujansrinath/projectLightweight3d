@@ -6,7 +6,9 @@ import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 
 import javax.media.j3d.Transform3D;
 import javax.vecmath.AxisAngle4d;
@@ -15,6 +17,7 @@ import javax.vecmath.Vector3d;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.util.glu.GLU;
 import org.xper.drawing.drawables.Drawable;
 
 public class MatchStick implements Drawable {
@@ -3976,6 +3979,7 @@ public class MatchStick implements Drawable {
 	public void draw() {
 		init();
 		drawSkeleton();
+		redraw();
 	}
 
 	protected void init() {
@@ -4042,37 +4046,56 @@ public class MatchStick implements Drawable {
     }
     
     protected void redraw() {
-        int minX = (int)boundingBox[0].x;
-        int minY = (int)boundingBox[0].y;
-        int maxX = (int)boundingBox[1].x;
-        int maxY = (int)boundingBox[1].y;
-
-        System.out.println("x = [" + minX + ", " + maxX + "]");
-        System.out.println("y = [" + minX + ", " + maxY + "]");
-
-        int screenWidth = 600;
-        int screenHeight = 600;
-
-        minX = minX + screenWidth/2;  maxX = maxX + screenWidth/2;
-        minY = minY + screenHeight/2; maxY = maxY + screenHeight/2;
-
-        System.out.println("x = [" + minX + ", " + maxX + "]");
-        System.out.println("y = [" + minX + ", " + maxY + "]");
-
+        int minX, minY, maxX, maxY;
+        
+        ByteBuffer viewport_byte = ByteBuffer.allocateDirect(16 * 4);
+        viewport_byte.order(ByteOrder.LITTLE_ENDIAN);
+        IntBuffer viewport = viewport_byte.asIntBuffer();
+        GL11.glGetInteger(GL11.GL_VIEWPORT, viewport);
+        
+        ByteBuffer modelview_byte = ByteBuffer.allocateDirect(16 * 4);
+        modelview_byte.order(ByteOrder.LITTLE_ENDIAN);
+        FloatBuffer modelview = modelview_byte.asFloatBuffer();
+        GL11.glGetFloat( GL11.GL_MODELVIEW_MATRIX, modelview );
+        
+        ByteBuffer projection_byte = ByteBuffer.allocateDirect(16 * 4);
+        projection_byte.order(ByteOrder.LITTLE_ENDIAN);
+        FloatBuffer projection = projection_byte.asFloatBuffer();
+        GL11.glGetFloat( GL11.GL_PROJECTION_MATRIX, projection );
+        
+        FloatBuffer minPos = FloatBuffer.allocate(3);
+        GLU.gluProject((float)boundingBox[0].x,(float)boundingBox[0].y,(float)boundingBox[0].z,modelview,projection,viewport,minPos);
+        
+        FloatBuffer maxPos = FloatBuffer.allocate(3);
+        GLU.gluProject((float)boundingBox[1].x,(float)boundingBox[1].y,(float)boundingBox[1].z,modelview,projection,viewport,maxPos);
+        
+        minX = (int)minPos.get(0) - 1;
+        minY = (int)minPos.get(1) - 1;
+        
+        maxX = (int)maxPos.get(0) + 1;
+        maxY = (int)maxPos.get(1) + 1;
+        
         int nPixX = maxX - minX;
         int nPixY = maxY - minY;
-
+        
         ByteBuffer color = ByteBuffer.allocateDirect(nPixX*nPixY*3);
         GL11.glReadPixels(minX,minY, nPixX, nPixY, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, color);
 
         String pixels = pixelToStr(color, nPixX,nPixY);
 
         try {
-            BufferedWriter out = new BufferedWriter(new FileWriter("/Users/ecpc32/Desktop/temp/pix.txt"));
-
-            out.write(pixels);
-            out.flush();
-            out.close();
+            BufferedWriter outPix = new BufferedWriter(new FileWriter("/Users/ecpc32/Desktop/temp/pix.txt"));
+            outPix.write(pixels);
+            outPix.flush();
+            outPix.close();
+            
+            BufferedWriter outSiz = new BufferedWriter(new FileWriter("/Users/ecpc32/Desktop/temp/siz.txt"));
+            outSiz.write(nPixX + "," + nPixY + "\n");
+            outSiz.write(minX + "," + minY + "\n");
+            outSiz.write(maxX + "," + maxY + "\n");
+            
+            outSiz.flush();
+            outSiz.close();
         } catch (Exception e) {
             System.out.println(e);
         }
@@ -4081,8 +4104,10 @@ public class MatchStick implements Drawable {
     private String pixelToStr(ByteBuffer color, int nPixX, int nPixY) {
         String str = new String();
         color.rewind();
-        for(int i=0; i<nPixX*nPixY; i+=3) {
-            int a = (color.get(i) & 0xff);
+        for(int i=0; i<nPixX*nPixY; i++) {
+            int a = (color.get() & 0xff);
+            int b = (color.get() & 0xff);
+            int c = (color.get() & 0xff);
 //          if (a != 127)
                 str = str + a + "\n";
              // + "," + (color.get() & 0xff) + "," + (color.get() & 0xff)
