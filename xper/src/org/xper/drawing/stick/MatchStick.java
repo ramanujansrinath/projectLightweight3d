@@ -4048,48 +4048,123 @@ public class MatchStick implements Drawable {
     }
     
     protected void redraw() {
-    	int[] stimBox = getStimBox(); // {199,199,180,180}; // 
+    	// get bounding box
+    	int[] stimBox = getStimBox(); 
     	int minX  = stimBox[0], minY  = stimBox[1];
     	int nPixX = stimBox[2], nPixY = stimBox[3];
-        
-    	GL11.glBegin(GL11.GL_LINE_LOOP);
-			GL11.glVertex2d(boundingBox[0].x, boundingBox[0].y);
-			GL11.glVertex2d(boundingBox[0].x, boundingBox[1].y);
-			GL11.glVertex2d(boundingBox[1].x, boundingBox[1].y);
-			GL11.glVertex2d(boundingBox[1].x, boundingBox[0].y);
-		GL11.glEnd();
+    	System.out.println("1. left bottom = " + minX + ", " + minY + "; size = " + nPixX + " x " + nPixY);
     	
-    	System.out.println("lower left: " + minX + ", " + minY);
-    	System.out.println("size: " + nPixX + " x " + nPixY);
-    	
+    	// read from frame buffer
         ByteBuffer color = ByteBuffer.allocateDirect(nPixX*nPixY);
         GL11.glReadPixels(minX,minY, nPixX, nPixY, GL11.GL_RED, GL11.GL_UNSIGNED_BYTE, color);
-
-        String pixelsStr = pixelToStr(color, nPixX,nPixY);
+        System.out.println("2. frame buffer read");
         
-        double[][] pixels = pixelToArray(color, nPixX,nPixY);
+        // convert to matrix
+        double[][] orig_pixels = byteBufferToArray(color,nPixX,nPixY);
+        double[][] orig_pixels_norm = normalizeBackground(orig_pixels,nPixX,nPixY);
+        double[][] pixels = normalizeBackground(orig_pixels,nPixX,nPixY);
         
-        DoubleFFT_2D fftObj = new DoubleFFT_2D(nPixX, nPixY);
-        fftObj.complexForward(pixels);
-		
+        // generate random matrix
+        double[][] randPixels = genRandMatrix(nPixX,nPixY*2);
+        
+        // do fft of image
+		DoubleFFT_2D fftOfShape = new DoubleFFT_2D(nPixX,nPixY);
+		fftOfShape.complexForward(pixels);
+		ComplexMatrix orig = new ComplexMatrix(nPixX,nPixY,pixels);
+		System.out.println("3. image fft done");
+        
+        // do fft of random image
+        DoubleFFT_2D fftOfRand = new DoubleFFT_2D(nPixX,nPixY);
+        fftOfRand.complexForward(randPixels);
+        ComplexMatrix rand = new ComplexMatrix(nPixX,nPixY,randPixels);
+        System.out.println("4. random fft done");
+        
+        // add random phase to image phase
+        orig.addPhase(rand.getPhase());
+        
+        // do ifft with scrambled phase
+        double[][] pixForIfft = orig.getRealImag();
+        DoubleFFT_2D inv_fftOfShape = new DoubleFFT_2D(nPixX,nPixY);
+        inv_fftOfShape.complexInverse(pixForIfft,true);
+        System.out.println("5. ifft done");
+        
+        // get pixels to write to frame buffer
+        
+        
+        // write to frame buffer
+        
+        // testing
+        System.out.println("converting to strings...");
+        String pixelsStr = doubleMatrixToStr(orig_pixels_norm, nPixX,nPixY*2);
+        String fftStr = doubleMatrixToStr(pixels,nPixX,nPixY*2);
+        String ifftStr = doubleMatrixToStr(pixForIfft,nPixX,nPixY*2);
 		try {
 		    BufferedWriter outPix = new BufferedWriter(new FileWriter("/Users/ecpc32/Desktop/temp/pix.txt"));
 		    outPix.write(pixelsStr);
 		    outPix.flush();
 		    outPix.close();
+		    System.out.println("saving 1. pixels saved");
 		    
 		    BufferedWriter outSiz = new BufferedWriter(new FileWriter("/Users/ecpc32/Desktop/temp/siz.txt"));
 		    outSiz.write(nPixX + "," + nPixY + "\n");
 		    outSiz.write(minX + "," + minY + "\n");
-		    
 		    outSiz.flush();
 		    outSiz.close();
+		    System.out.println("saving 2. size saved");
+		    
+		    BufferedWriter outfft = new BufferedWriter(new FileWriter("/Users/ecpc32/Desktop/temp/fft.txt"));
+		    outfft.write(fftStr);
+		    outfft.flush();
+		    outfft.close();
+		    System.out.println("saving 3. fft saved");
+		    
+		    BufferedWriter outifft = new BufferedWriter(new FileWriter("/Users/ecpc32/Desktop/temp/ifft.txt"));
+		    outifft.write(ifftStr);
+		    outifft.flush();
+		    outifft.close();
+		    System.out.println("saving 4. ifft saved");
 		} catch (Exception e) {
 		    System.out.println(e);
 		}
     }
 
-    private int[] getStimBox() {
+    private double[][] normalizeBackground(double[][] orig_pixels, int nx, int ny) {
+    	double[][] pixels = new double[nx][2*ny];
+    	
+        double nPix = 0;
+        double pix = 0;
+        
+        for(int i=0; i<nx; i++)
+			for (int j=0; j<2*ny; j+=2)
+		        if (orig_pixels[i][j] != 127) {
+		        	pix += orig_pixels[i][j];
+		        	nPix++;
+	        	}
+        
+        double newBackground = pix/nPix; 
+        
+        for(int i=0; i<nx; i++)
+			for (int j=0; j<2*ny; j+=2) {
+				pixels[i][j+1] = 0;
+				
+		        if (orig_pixels[i][j] == 127)
+		        	pixels[i][j] = newBackground;
+		        else
+		        	pixels[i][j] = orig_pixels[i][j];
+			}
+        
+        return pixels;
+	}
+
+	private double[][] genRandMatrix(int nPixX, int nPixY) {
+    	double[][] randMatrix = new double[nPixX][nPixY];
+    	for (int i=0; i<nPixX; i++)
+    		for (int j=0; j<nPixY; j++)
+    			randMatrix[i][j] = Math.random();
+		return randMatrix;
+	}
+
+	private int[] getStimBox() {
     	int minX, minY, maxX, maxY;
         
         ByteBuffer viewport_byte = ByteBuffer.allocateDirect(16 * 4);
@@ -4128,7 +4203,7 @@ public class MatchStick implements Drawable {
         return stimBox;
     }
     
-	private String pixelToStr(ByteBuffer color, int nPixX, int nPixY) {
+	private String byteBufferToStr(ByteBuffer color, int nPixX, int nPixY) {
         String str = new String();
         color.rewind();
         for(int i=0; i<nPixY; i++) {
@@ -4144,7 +4219,7 @@ public class MatchStick implements Drawable {
         return str;
     }
     
-	private double[][] pixelToArray(ByteBuffer color, int nPixX, int nPixY) {
+	private double[][] byteBufferToArray(ByteBuffer color, int nPixX, int nPixY) {
     	double[][] pixels = new double[nPixX][2*nPixY];
         color.rewind();
         
@@ -4154,12 +4229,23 @@ public class MatchStick implements Drawable {
 		        pixels[j][2*i] = a;
 	            pixels[j][2*i + 1] = 0;
 			}
-			
 		}
         return pixels;
     }
     
-	
+	private String doubleMatrixToStr(double[][] array, int nx, int ny) {
+        String str = new String();
+        for(int i=0; i<nx; i++) {
+			for (int j=0; j<ny; j++) {
+		        if (j<ny-1)
+		        	str = str + array[i][j] + ",";
+		        else
+		        	str = str + array[i][j];
+			}
+			str = str + "\n";
+		}
+        return str;
+	}
 	
     public MStickObj4Smooth getSmoothObj() {
     	return obj1;
