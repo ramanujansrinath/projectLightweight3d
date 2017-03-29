@@ -173,7 +173,7 @@ public class MStickObj4Smooth {
 
     }
     public void drawVect() {
-		GL11.glColor3f(1.0f, 0.0f, 1.0f);
+		GL11.glColor3f(1.0f, 1.0f, 1.0f);
 		GL11.glEnable(GL11.GL_LIGHTING);
   
 		for (int i=0; i< nFac; i++) {
