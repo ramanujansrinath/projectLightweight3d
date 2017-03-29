@@ -7,11 +7,11 @@ import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.PixelFormat;
-
 import org.xper.drawing.drawables.Drawable;
 import org.xper.drawing.renderer.AbstractRenderer;
 import org.xper.drawing.renderer.PerspectiveRenderer;
 import org.xper.drawing.stick.MatchStick;
+import org.xper.utils.RGBColor;
 
 public class DrawingManager implements Drawable {
 	Drawable stimObj;
@@ -21,9 +21,7 @@ public class DrawingManager implements Drawable {
 	
 	int nStim = 0;
 	int stimCounter = 0;
-	float r_bkgrd;
-	float g_bkgrd;
-	float b_bkgrd;
+	RGBColor background;
 	
 	String imageFolderName = "";
 	
@@ -66,11 +64,11 @@ public class DrawingManager implements Drawable {
 		GL11.glShadeModel(GL11.GL_SMOOTH);
 		GL11.glDisable(GL11.GL_DEPTH_TEST);
 		
-		GL11.glClearColor(r_bkgrd,g_bkgrd,b_bkgrd,1);
+		GL11.glClearColor(background.getRed(),background.getGreen(),background.getBlue(),0);
 		
 		while(stimCounter < nStim) {
 			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_STENCIL_BUFFER_BIT);
-			GL11.glClearColor(r_bkgrd,g_bkgrd,b_bkgrd,1);
+			GL11.glClearColor(background.getRed(),background.getGreen(),background.getBlue(),0);			
 			renderer.draw(this);
 			window.swapBuffers();
 			pngMaker.saveImage(stimObjIds.get(stimCounter),height,width, imageFolderName);
@@ -85,17 +83,15 @@ public class DrawingManager implements Drawable {
 	}
 
 	public void draw() {
-		GL11.glClearColor(r_bkgrd,g_bkgrd,b_bkgrd,1);
+		GL11.glClearColor(background.getRed(),background.getGreen(),background.getBlue(),0);
 				
 		if (nStim > 0) {
 			stimObjs.get(stimCounter).draw();
 		}
 	}
 	
-	public void setBackgroundColor(float r_bkgrd,float g_bkgrd,float b_bkgrd) {
-		this.r_bkgrd = r_bkgrd;
-		this.g_bkgrd = g_bkgrd;
-		this.b_bkgrd = b_bkgrd;
+	public void setBackgroundColor(float red,float green,float blue) {
+		this.background = new RGBColor(red, green, blue);
 	}
 	
 	public void close() {
