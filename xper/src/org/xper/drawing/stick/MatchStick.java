@@ -2,9 +2,7 @@
 package org.xper.drawing.stick;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -61,6 +59,7 @@ public class MatchStick implements Drawable {
 	final float MATT_SPEC = 0.0f;
 	final float MATT_DIFF  = 0.60754f;
 
+	private boolean doClouds;
 	private Point3d[] boundingBox;
 	
     public MatchStick() {}
@@ -3981,7 +3980,8 @@ public class MatchStick implements Drawable {
 	public void draw() {
 		init();
 		drawSkeleton();
-		redraw();
+		if (doClouds)
+			redraw();
 	}
 
 	protected void init() {
@@ -4052,16 +4052,13 @@ public class MatchStick implements Drawable {
     	int[] stimBox = getStimBox(); 
     	int minX  = stimBox[0], minY  = stimBox[1];
     	int nPixX = stimBox[2], nPixY = stimBox[3];
-    	System.out.println("1. left bottom = " + minX + ", " + minY + "; size = " + nPixX + " x " + nPixY);
     	
     	// read from frame buffer
-        ByteBuffer color = ByteBuffer.allocateDirect(nPixX*nPixY);
-        GL11.glReadPixels(minX,minY, nPixX, nPixY, GL11.GL_RED, GL11.GL_UNSIGNED_BYTE, color);
-        System.out.println("2. frame buffer read");
+        ByteBuffer redPixels = ByteBuffer.allocateDirect(nPixX*nPixY);
+        GL11.glReadPixels(minX,minY, nPixX, nPixY, GL11.GL_RED, GL11.GL_UNSIGNED_BYTE, redPixels);
         
         // convert to matrix
-        double[][] orig_pixels = byteBufferToArray(color,nPixX,nPixY);
-        double[][] orig_pixels_norm = normalizeBackground(orig_pixels,nPixX,nPixY);
+        double[][] orig_pixels = byteBufferToComplexMatrix(redPixels,nPixX,nPixY);
         double[][] pixels = normalizeBackground(orig_pixels,nPixX,nPixY);
         
         // generate random matrix
@@ -4070,65 +4067,67 @@ public class MatchStick implements Drawable {
         // do fft of image
 		DoubleFFT_2D fftOfShape = new DoubleFFT_2D(nPixX,nPixY);
 		fftOfShape.complexForward(pixels);
-		ComplexMatrix orig = new ComplexMatrix(nPixX,nPixY,pixels);
-		System.out.println("3. image fft done");
+		ComplexMatrix shapeMatrix = new ComplexMatrix(nPixX,nPixY,pixels);
         
         // do fft of random image
         DoubleFFT_2D fftOfRand = new DoubleFFT_2D(nPixX,nPixY);
         fftOfRand.complexForward(randPixels);
-        ComplexMatrix rand = new ComplexMatrix(nPixX,nPixY,randPixels);
-        System.out.println("4. random fft done");
+        ComplexMatrix randMatrix = new ComplexMatrix(nPixX,nPixY,randPixels);
         
         // add random phase to image phase
-        orig.addPhase(rand.getPhase());
+        shapeMatrix.addPhase(randMatrix.getPhase());
         
         // do ifft with scrambled phase
-        double[][] pixForIfft = orig.getRealImag();
+        double[][] matrixForIfft = shapeMatrix.getRealImag();
         DoubleFFT_2D inv_fftOfShape = new DoubleFFT_2D(nPixX,nPixY);
-        inv_fftOfShape.complexInverse(pixForIfft,true);
-        System.out.println("5. ifft done");
+        inv_fftOfShape.complexInverse(matrixForIfft,true);
         
         // get pixels to write to frame buffer
+        ByteBuffer allPixels = ByteBuffer.allocateDirect(nPixX*nPixY*4);
+        GL11.glReadPixels(minX,minY, nPixX, nPixY, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, allPixels);
         
+        // get byte buffer to write
+        ByteBuffer pixelsToWrite = getByteBufferToWrite(matrixForIfft,allPixels,nPixX,nPixY);
         
-        // write to frame buffer
-        
-        // testing
-        System.out.println("converting to strings...");
-        String pixelsStr = doubleMatrixToStr(orig_pixels_norm, nPixX,nPixY*2);
-        String fftStr = doubleMatrixToStr(pixels,nPixX,nPixY*2);
-        String ifftStr = doubleMatrixToStr(pixForIfft,nPixX,nPixY*2);
-		try {
-		    BufferedWriter outPix = new BufferedWriter(new FileWriter("/Users/ecpc32/Desktop/temp/pix.txt"));
-		    outPix.write(pixelsStr);
-		    outPix.flush();
-		    outPix.close();
-		    System.out.println("saving 1. pixels saved");
-		    
-		    BufferedWriter outSiz = new BufferedWriter(new FileWriter("/Users/ecpc32/Desktop/temp/siz.txt"));
-		    outSiz.write(nPixX + "," + nPixY + "\n");
-		    outSiz.write(minX + "," + minY + "\n");
-		    outSiz.flush();
-		    outSiz.close();
-		    System.out.println("saving 2. size saved");
-		    
-		    BufferedWriter outfft = new BufferedWriter(new FileWriter("/Users/ecpc32/Desktop/temp/fft.txt"));
-		    outfft.write(fftStr);
-		    outfft.flush();
-		    outfft.close();
-		    System.out.println("saving 3. fft saved");
-		    
-		    BufferedWriter outifft = new BufferedWriter(new FileWriter("/Users/ecpc32/Desktop/temp/ifft.txt"));
-		    outifft.write(ifftStr);
-		    outifft.flush();
-		    outifft.close();
-		    System.out.println("saving 4. ifft saved");
-		} catch (Exception e) {
-		    System.out.println(e);
-		}
+        // write byte buffer to framebuffer
+        GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_STENCIL_BUFFER_BIT);
+        GL11.glClearColor(0.5f, 0.5f, 0.5f, 1f);
+        GL11.glRasterPos2d(boundingBox[0].x, boundingBox[0].y);
+        GL11.glDrawPixels(nPixX, nPixY, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, pixelsToWrite);
     }
 
-    private double[][] normalizeBackground(double[][] orig_pixels, int nx, int ny) {
+    private ByteBuffer getByteBufferToWrite(double[][] complexMatrixToWrite, ByteBuffer allPixels, int nx, int ny) {
+    	ByteBuffer modifiedPixels = ByteBuffer.allocateDirect(nx*ny*4);
+    	allPixels.rewind();
+        
+        for(int i=0; i<ny; i++) {
+			for (int j=0; j<nx; j++) {
+		        byte r = allPixels.get();
+		        byte g = allPixels.get();
+		        byte b = allPixels.get();
+		        int  a = allPixels.get() & 0xff;
+		        
+		        if (a > 0) {
+		        	int col = (int)(complexMatrixToWrite[j][2*i]);
+		        	modifiedPixels.put((byte)col);
+		        	modifiedPixels.put((byte)col);
+		        	modifiedPixels.put((byte)col);
+		        	modifiedPixels.put((byte)a);
+		        } else {
+		        	modifiedPixels.put(r);
+		        	modifiedPixels.put(g);
+		        	modifiedPixels.put(b);
+		        	modifiedPixels.put((byte)0);
+		        }
+		        	
+			}
+		}
+    	
+        modifiedPixels.rewind();
+		return modifiedPixels;
+	}
+
+	private double[][] normalizeBackground(double[][] orig_pixels, int nx, int ny) {
     	double[][] pixels = new double[nx][2*ny];
     	
         double nPix = 0;
@@ -4183,18 +4182,16 @@ public class MatchStick implements Drawable {
         GL11.glGetFloat( GL11.GL_PROJECTION_MATRIX, projection );
         
         FloatBuffer minPos = FloatBuffer.allocate(3);
-//        (float)boundingBox[0].z
         GLU.gluProject((float)boundingBox[0].x,(float)boundingBox[0].y,0.0f,modelview,projection,viewport,minPos);
         
         FloatBuffer maxPos = FloatBuffer.allocate(3);
-//        (float)boundingBox[1].z
         GLU.gluProject((float)boundingBox[1].x,(float)boundingBox[1].y,0.0f,modelview,projection,viewport,maxPos);
         
-        minX = (int)minPos.get(0) - 10;
-        minY = (int)minPos.get(1) - 10;
+        minX = (int)minPos.get(0);
+        minY = (int)minPos.get(1);
         
-        maxX = (int)maxPos.get(0) + 10;
-        maxY = (int)maxPos.get(1) + 10;
+        maxX = (int)maxPos.get(0);
+        maxY = (int)maxPos.get(1);
         
         int nPixX = maxX - minX;
         int nPixY = maxY - minY;
@@ -4202,24 +4199,8 @@ public class MatchStick implements Drawable {
         int[] stimBox = {minX, minY, nPixX, nPixY};
         return stimBox;
     }
-    
-	private String byteBufferToStr(ByteBuffer color, int nPixX, int nPixY) {
-        String str = new String();
-        color.rewind();
-        for(int i=0; i<nPixY; i++) {
-			for (int j=0; j<nPixX; j++) {
-		        int a = color.get() & 0xff;
-		        if (j<nPixX-1)
-		        	str = str + a + ",";
-		        else
-		        	str = str + a;
-			}
-			str = str + "\n";
-		}
-        return str;
-    }
-    
-	private double[][] byteBufferToArray(ByteBuffer color, int nPixX, int nPixY) {
+
+	private double[][] byteBufferToComplexMatrix(ByteBuffer color, int nPixX, int nPixY) {
     	double[][] pixels = new double[nPixX][2*nPixY];
         color.rewind();
         
@@ -4232,21 +4213,7 @@ public class MatchStick implements Drawable {
 		}
         return pixels;
     }
-    
-	private String doubleMatrixToStr(double[][] array, int nx, int ny) {
-        String str = new String();
-        for(int i=0; i<nx; i++) {
-			for (int j=0; j<ny; j++) {
-		        if (j<ny-1)
-		        	str = str + array[i][j] + ",";
-		        else
-		        	str = str + array[i][j];
-			}
-			str = str + "\n";
-		}
-        return str;
-	}
-	
+
     public MStickObj4Smooth getSmoothObj() {
     	return obj1;
     }
@@ -4271,6 +4238,9 @@ public class MatchStick implements Drawable {
     }
     public double getFinalRotation(int i) {
     	return finalRotation[i];
+    }
+    public void setDoClouds(boolean doClouds) {
+    	this.doClouds = doClouds;
     }
 }
 
