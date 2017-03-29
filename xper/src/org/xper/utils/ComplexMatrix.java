@@ -1,4 +1,4 @@
-package org.xper.drawing.stick;
+package org.xper.utils;
 
 public class ComplexMatrix {
 	private final int nx;
