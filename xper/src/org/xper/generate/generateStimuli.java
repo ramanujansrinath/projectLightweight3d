@@ -17,6 +17,7 @@ public class generateStimuli {
 		objs.add(new MatchStick());
 		objs.get(0).genMatchStickRand();
 		objs.get(0).setTextureType(args[2]);
+		objs.get(0).setDoClouds(Boolean.parseBoolean(args[3]));
 		
 		MStickSpec spec = new MStickSpec();
 		spec.setMStickInfo(objs.get(0));

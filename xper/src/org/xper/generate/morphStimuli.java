@@ -18,6 +18,7 @@ public class morphStimuli {
 		objs.get(0).genMatchStickFromFile(folderPath + "/" + args[1] + "_spec.xml");
 		objs.get(0).mutate(0);
 		objs.get(0).setTextureType(args[3]);
+		objs.get(0).setDoClouds(Boolean.parseBoolean(args[4]));
 	
 		MStickSpec spec = new MStickSpec();
 		spec.setMStickInfo(objs.get(0));
