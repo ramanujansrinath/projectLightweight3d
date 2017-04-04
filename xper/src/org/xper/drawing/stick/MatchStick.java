@@ -21,7 +21,7 @@ import org.xper.utils.ComplexMatrix;
 import org.jtransforms.fft.DoubleFFT_2D;
 
 public class MatchStick implements Drawable {
-    final double scaleForMAxisShape  = 20.0;
+    final double scaleForMAxisShape  = 40.0;
     
     private double[] finalRotation;
     private Point3d finalShiftinDepth;
@@ -35,7 +35,7 @@ public class MatchStick implements Drawable {
     private MStickObj4Smooth obj1;
     private boolean[] LeafBranch = new boolean[10];
 
-    private final double[] PARAM_nCompDist = {0.0 ,0.2, 0.6, 1.0, 0.0, 0.0, 0.0, 0.0};
+    private final double[] PARAM_nCompDist = {0.0 ,0.4, 0.8, 1.0, 0.0, 0.0, 0.0, 0.0};
 
     private final double PROB_addToEndorJunc = 1; 	// 60% add to end or junction pt, 40% to the branch
     private final double PROB_addToEnd_notJunc = 0; // when "addtoEndorJunc", 50% add to end, 50% add to junc
@@ -3534,11 +3534,11 @@ public class MatchStick implements Drawable {
 
         this.obj1.scaleTheObj(scaleForMAxisShape);
 
-//        this.obj1.translateVertexOnZ_ram();
+        this.finalShiftinDepth = this.obj1.translateVertexOnZ_ram();
 
-        this.finalShiftinDepth = new Point3d();
-        if ( shiftOriginToSurface) // a boolean
-            this.finalShiftinDepth = this.obj1.translateVertexOnZ(scaleForMAxisShape);
+//        this.finalShiftinDepth = new Point3d();
+//        if ( shiftOriginToSurface) // a boolean
+//            this.finalShiftinDepth = this.obj1.translateVertexOnZ(scaleForMAxisShape);
 
 //        System.out.println("depthshift: " + this.finalShiftinDepth.x + ", " + this.finalShiftinDepth.y + ", " + this.finalShiftinDepth.z);
 
@@ -4000,11 +4000,13 @@ public class MatchStick implements Drawable {
 	    	amb = MATT_AMB;
 	    	spec = MATT_SPEC;
 	    	dif = MATT_DIFF;
-    	} else {
+    	} else if (textureType.compareTo("SPEC") == 0) {
     		mat_shininess = SPEC_SHINE;
 	    	amb = SPEC_AMB;
 			spec = SPEC_SPEC;
 			dif = SPEC_DIFF;
+    	} else {
+    		return;
     	}
     	
         float[] mat_ambient = {amb,amb,amb,1.0f};
