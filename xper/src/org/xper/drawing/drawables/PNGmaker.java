@@ -37,7 +37,7 @@ public class PNGmaker {
 		byte[] data = screenShotBinary(width,height);  
 
 		try {
-			FileOutputStream fos = new FileOutputStream(imageFolderName);
+			FileOutputStream fos = new FileOutputStream(imageFolderName + "/" + stimObjId + ".png");
 		    fos.write(data);
 		    fos.close();
 		} 
