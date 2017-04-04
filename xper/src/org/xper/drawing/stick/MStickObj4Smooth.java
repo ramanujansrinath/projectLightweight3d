@@ -989,7 +989,7 @@ public class MStickObj4Smooth {
         return translateVector;
     }
 
-    public void translateVertexOnZ_ram() {
+    public Point3d translateVertexOnZ_ram() {
         // the tolerance should depends on the scaleForMAxisShape
         int i;
 
@@ -1012,6 +1012,10 @@ public class MStickObj4Smooth {
         for (i=1; i<=nVect; i++) {
             vect_info[i].sub(nearestPt);
         }
+        
+        Point3d translateVector = new Point3d(
+                -nearestPt.x, -nearestPt.y, -nearestPt.z);
+       return translateVector;
 
     }
     
