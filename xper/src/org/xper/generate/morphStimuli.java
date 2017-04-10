@@ -13,7 +13,7 @@ public class morphStimuli {
 		List<Long> ids = new ArrayList<Long>();
 		List<MatchStick> objs = new ArrayList<MatchStick>();
 		
-		ids.add(Long.parseLong(args[1]));
+		ids.add(Long.parseLong(args[2]));
 		objs.add(new MatchStick());
 		objs.get(0).genMatchStickFromFile(folderPath + "/" + args[1] + "_spec.xml");
 		objs.get(0).mutate(0);
@@ -25,6 +25,6 @@ public class morphStimuli {
 		spec.writeInfo2File(folderPath + "/" + args[2]);
 		
 		PNGmaker pngMaker = new PNGmaker();
-		pngMaker.createAndSavePNGsfromObjs(objs, ids, folderPath + "/" + args[2] + ".png");
+		pngMaker.createAndSavePNGsfromObjs(objs, ids, folderPath);
 	}
 }

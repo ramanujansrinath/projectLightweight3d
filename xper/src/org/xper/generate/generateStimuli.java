@@ -24,6 +24,6 @@ public class generateStimuli {
 		spec.writeInfo2File(folderPath + "/" + args[1]);
 		
 		PNGmaker pngMaker = new PNGmaker();
-		pngMaker.createAndSavePNGsfromObjs(objs, ids, folderPath + "/" + args[1] + ".png");
+		pngMaker.createAndSavePNGsfromObjs(objs, ids, folderPath);
 	}
 }
