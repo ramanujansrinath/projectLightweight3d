@@ -1710,7 +1710,7 @@ public class MatchStick implements Drawable {
     public boolean mutate(int debugParam) {
         final int MaxMutateTryTimes = 10;
         final int MaxAddTubeTryTimes = 15;
-        final int MaxCompNum = 8;
+        final int MaxCompNum = 4;
         final int MinCompNum = 2;
         final int MaxDeletionNum = 1;
 
@@ -3463,7 +3463,6 @@ public class MatchStick implements Drawable {
     {
         int i;
         boolean showDebug =false;
-        boolean shiftOriginToSurface = true;
         MStickObj4Smooth[] MObj = new MStickObj4Smooth[nComponent+1];
         // 1. generate 1 tube Object for each TubeComp
 //        System.out.println("we have n comp = " + nComponent);
