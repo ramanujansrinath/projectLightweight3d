@@ -4055,6 +4055,7 @@ public class MatchStick implements Drawable {
     	int nPixX = stimBox[2], nPixY = stimBox[3];
     	
     	// read from frame buffer
+    	GL11.glPixelStorei(GL11.GL_PACK_ALIGNMENT, 1);
         ByteBuffer redPixels = ByteBuffer.allocateDirect(nPixX*nPixY);
         GL11.glReadPixels(minX,minY, nPixX, nPixY, GL11.GL_RED, GL11.GL_UNSIGNED_BYTE, redPixels);
         
@@ -4092,7 +4093,7 @@ public class MatchStick implements Drawable {
         
         // write byte buffer to framebuffer
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_STENCIL_BUFFER_BIT);
-        GL11.glClearColor(0.5f, 0.5f, 0.5f, 1f);
+        GL11.glClearColor(0.5f, 0.5f, 0.5f, 0f);
         GL11.glRasterPos2d(boundingBox[0].x, boundingBox[0].y);
         GL11.glDrawPixels(nPixX, nPixY, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, pixelsToWrite);
     }
@@ -4113,7 +4114,7 @@ public class MatchStick implements Drawable {
 		        	modifiedPixels.put((byte)col);
 		        	modifiedPixels.put((byte)col);
 		        	modifiedPixels.put((byte)col);
-		        	modifiedPixels.put((byte)a);
+		        	modifiedPixels.put((byte)0);
 		        } else {
 		        	modifiedPixels.put(r);
 		        	modifiedPixels.put(g);

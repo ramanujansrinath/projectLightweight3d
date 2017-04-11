@@ -63,9 +63,7 @@ public class DrawingManager implements Drawable {
 		
 		GL11.glShadeModel(GL11.GL_SMOOTH);
 		GL11.glDisable(GL11.GL_DEPTH_TEST);
-		
-		GL11.glClearColor(background.getRed(),background.getGreen(),background.getBlue(),0);
-		
+				
 		while(stimCounter < nStim) {
 			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_STENCIL_BUFFER_BIT);
 			GL11.glClearColor(background.getRed(),background.getGreen(),background.getBlue(),0);			
@@ -83,6 +81,7 @@ public class DrawingManager implements Drawable {
 	}
 
 	public void draw() {
+		GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_STENCIL_BUFFER_BIT);
 		GL11.glClearColor(background.getRed(),background.getGreen(),background.getBlue(),0);
 				
 		if (nStim > 0) {
