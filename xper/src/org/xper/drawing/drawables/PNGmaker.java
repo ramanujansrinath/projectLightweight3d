@@ -13,14 +13,14 @@ import org.lwjgl.opengl.GL11;
 import org.xper.drawing.stick.MatchStick;
 
 public class PNGmaker {
-	int height = 600;
-	int width = 600;
+	int height = 512;
+	int width = 512;
 	
 	public PNGmaker() {}
 
 	public void createAndSavePNGsfromObjs(List<MatchStick> objs,List<Long> stimObjIds,String imageFolderName) {
 		DrawingManager testWindow = new DrawingManager(height,width);
-		testWindow.setBackgroundColor(0.5f,0.5f,0.5f);
+		testWindow.setBackgroundColor(0.3f,0.3f,0.3f);
 		testWindow.setPngMaker(this);
 		testWindow.setImageFolderName(imageFolderName);
 		System.out.println("creating and saving PNGs...");

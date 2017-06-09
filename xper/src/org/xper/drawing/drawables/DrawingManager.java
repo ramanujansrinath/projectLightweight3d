@@ -55,8 +55,8 @@ public class DrawingManager implements Drawable {
 		
 		renderer = new PerspectiveRenderer();
 		renderer.setDepth(6000);
-		renderer.setDistance(635);
-		renderer.setPupilDistance(50);
+		renderer.setDistance(525);
+		renderer.setPupilDistance(34.5);
 		renderer.setHeight(height);
 		renderer.setWidth(width);
 		renderer.init(window.getWidth(), window.getHeight());
