@@ -18,11 +18,14 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.GLU;
 import org.xper.drawing.drawables.Drawable;
 import org.xper.utils.ComplexMatrix;
+import org.xper.utils.RGBColor;
+import org.xper.utils.Lighting;
+import org.xper.utils.Lighting.Material;
 import org.jtransforms.fft.DoubleFFT_2D;
 
 public class MatchStick implements Drawable {
     final double scaleForMAxisShape  = 40.0;
-    
+
     private double[] finalRotation;
     private Point3d finalShiftinDepth;
     private int nComponent;
@@ -35,7 +38,7 @@ public class MatchStick implements Drawable {
     private MStickObj4Smooth obj1;
     private boolean[] LeafBranch = new boolean[10];
 
-    private final double[] PARAM_nCompDist = {0.0 ,0.4, 0.8, 1.0, 0.0, 0.0, 0.0, 0.0};
+    private final double[] PARAM_nCompDist = {0.0 ,0.4, 0.6, 1.0, 0.0, 0.0, 0.0, 0.0};
 
     private final double PROB_addToEndorJunc = 1; 	// 60% add to end or junction pt, 40% to the branch
     private final double PROB_addToEnd_notJunc = 0; // when "addtoEndorJunc", 50% add to end, 50% add to junc
@@ -44,24 +47,15 @@ public class MatchStick implements Drawable {
     private final double ChangeRotationVolatileRate = 0;
                       								// the prob. of chg the final rot angle after a GA mutate
     private final double TangentSaveZone = Math.PI / 6.0;
-    
-    private int nowCenterTube;
-    
-    private String textureType = "SHADE";
 
-	final float SPEC_SHINE = 0.2f*128f;
-	final float SPEC_AMB = 0.19225f;
-	final float SPEC_SPEC = 0.708273f;
-	final float SPEC_DIFF  = 0.30754f;
-	
-	final float MATT_SHINE = 0f;
-	final float MATT_AMB = 0.19225f;
-	final float MATT_SPEC = 0.0f;
-	final float MATT_DIFF  = 0.60754f;
+    private int nowCenterTube;
+
+    private String textureType = "SHADE";
 
 	private boolean doClouds;
 	private Point3d[] boundingBox;
-	
+	private RGBColor stimColor;
+
     public MatchStick() {}
 
     /**
@@ -100,7 +94,7 @@ public class MatchStick implements Drawable {
             this.JuncPt[i] = new JuncPt_struct();
             this.JuncPt[i].copyFrom(in.JuncPt[i]);
         }
-        this.obj1 = in.obj1; 
+        this.obj1 = in.obj1;
 
         for (i=1; i<=nComponent; i++)
             this.LeafBranch[i] = in.LeafBranch[i];
@@ -132,13 +126,13 @@ public class MatchStick implements Drawable {
         }
 
         in_specStr = fileData.toString();
-        
+
         MStickSpec inSpec = new MStickSpec();
         inSpec = MStickSpec.fromXml(in_specStr);
-        
+
         genMatchStickFromShapeSpec(inSpec);
     }
-    
+
     /**
      *    genMatchStickFrom spec data
      *    Read in a spec structure, and dump those info into this MAxis structure
@@ -755,7 +749,7 @@ public class MatchStick implements Drawable {
         boolean showComponents = false;
         if (showComponents)
     		for (i=1; i<=nComponent; i++) {
-    			float[][] colorCode= {  
+    			float[][] colorCode= {
 	    			{1.0f, 1.0f, 1.0f},
 	                {1.0f, 0.0f, 0.0f},
 	                {0.0f, 1.0f, 0.0f},
@@ -763,16 +757,21 @@ public class MatchStick implements Drawable {
 	                {0.0f, 1.0f, 1.0f},
 	                {1.0f, 0.0f, 1.0f},
 	                {1.0f, 1.0f, 0.0f},
-	                {0.4f, 0.1f, 0.6f} 
+	                {0.4f, 0.1f, 0.6f}
 	                };
 
 
     			comp[i].drawSurfPt(colorCode[i-1],scaleForMAxisShape);
-            } 
+            }
         else {
+        	obj1.setStimColor(stimColor);
         	obj1.drawVect();
         	boundingBox = obj1.getBoundingBox();
         }
+    }
+    
+    public void setStimColor(RGBColor color) {
+    	this.stimColor = color;
     }
 
      /**
@@ -870,8 +869,8 @@ public class MatchStick implements Drawable {
     */
     private boolean validMStickSize()
     {
-    	double maxRad = 10; // degree
-    	double screenDist = 635;
+    	double maxRad = 50; // degree
+    	double screenDist = 616;
 
     	double radSize = screenDist * Math.tan(maxRad*Math.PI/180) / 2;
 
@@ -1721,7 +1720,7 @@ public class MatchStick implements Drawable {
         //double[] prob_center = {0.6, 0.8, 1.0, 1.0};
         double[] prob_center = {0.6, 0.6, 1.0, 1.0};
         double[] prob_addNewTube = { 0.3333, 0.6666, 1.0}; // 1/3 no add , 1/3 add 1, 1/3 add 2 tubes
-        
+
         if ( this.nComponent <=3) {
             prob_addNewTube[0] = 0.3;
             prob_addNewTube[1] = 1.0;
@@ -1732,7 +1731,7 @@ public class MatchStick implements Drawable {
             prob_addNewTube[0] = 0.7;
             prob_addNewTube[1] = 1.0;
         }
-   
+
         this.decideLeafBranch();
 
         int i;
@@ -1752,7 +1751,7 @@ public class MatchStick implements Drawable {
                 else
                     task4Tube[i] = stickMath_lib.pickFromProbDist( prob_center);
 
-                if (task4Tube[i] != 1) 
+                if (task4Tube[i] != 1)
                 	noChgFlg = false; // at least one chg will occur
             }
                 nAddTube = stickMath_lib.pickFromProbDist( prob_addNewTube) - 1;
@@ -1827,7 +1826,7 @@ public class MatchStick implements Drawable {
         // everytime we should load the task4Tube from the back
         // since if we re-do the mutate, the task4Tube might already
         // change during the previous manipulation.
-        
+
         for (i=1; i<=nComponent; i++)
             task4Tube_backup[i] = task4Tube[i];
 
@@ -1849,12 +1848,12 @@ public class MatchStick implements Drawable {
             // 2.1 remap the task4Tube
             if (nRemoveTube > 0) // else , we can skip this procedure
                 this.removeComponent( removeFlg);
-            
+
             int counter = 1;
             for (i=1; i<= old_nComp; i++)
                 if ( task4Tube[i] != 4)
                     task4Tube[counter++] = task4Tube[i];
-        
+
             // 2.2 really doing the fine tune & replace
             for (i=1; i<= nComponent; i++) {
                 boolean res = true;
@@ -1890,7 +1889,7 @@ public class MatchStick implements Drawable {
                     this.copyFrom(tempStoreStick);
                 }
             }
-            if (!successMutateTillNow) 
+            if (!successMutateTillNow)
             	continue;
 
             // 5. reassign the radius value at junction point
@@ -1899,9 +1898,9 @@ public class MatchStick implements Drawable {
             // 6. translate the shape, so that the first component is centered at origin.
             this.centerShapeAtOrigin(-1);
 
-            if (!this.validMStickSize()) 
+            if (!this.validMStickSize())
                 successMutateTillNow = false;
-            
+
             if (!successMutateTillNow)
             	continue;
 
@@ -3992,27 +3991,21 @@ public class MatchStick implements Drawable {
         this.initLight();
     }
     protected void initLight()
-    {
-    	float mat_shininess, amb, dif, spec;
-    	if (textureType.compareTo("SHADE") == 0) {
-	    	mat_shininess = MATT_SHINE;
-	    	amb = MATT_AMB;
-	    	spec = MATT_SPEC;
-	    	dif = MATT_DIFF;
-    	} else if (textureType.compareTo("SPEC") == 0) {
-    		mat_shininess = SPEC_SHINE;
-	    	amb = SPEC_AMB;
-			spec = SPEC_SPEC;
-			dif = SPEC_DIFF;
-    	} else {
-    		return;
-    	}
-    	
-        float[] mat_ambient = {amb,amb,amb,1.0f};
-        float[] mat_diffuse = {dif,dif,dif,1.0f};
-        float[] mat_specular = {spec,spec,spec,1f };
-        
-        float[] light_position = {0.0f, 100.0f, 200.0f, 1.0f};
+    {    	
+    	Lighting light = new Lighting();
+    	light.setLightColor(stimColor);
+    	light.setMaterial(Material.valueOf(textureType));
+
+        float[] mat_ambient = light.getAmbient();
+        float[] mat_diffuse = light.getDiffuse();
+        float[] mat_specular = light.getSpecular();
+        float mat_shininess = light.getShine();
+
+        // x: horizontal: positive right
+        // y: vertical: positive up
+        // z: in-out: positive out
+        // w: directional or not: 1=non-directional
+        float[] light_position = {0.0f, 200.0f, 200.0f, 1.0f};
 
         FloatBuffer mat_specularBuffer = BufferUtils.createFloatBuffer(mat_specular.length);
         mat_specularBuffer.put(mat_specular).flip();
@@ -4043,54 +4036,61 @@ public class MatchStick implements Drawable {
 
         GL11.glEnable(GL11.GL_LIGHT0);
     }
-    
+
     public void setTextureType(String tt) {
     	textureType = tt;
+    }
+
+    public void drawBlur() {
+    	textureType = "TWOD";
+    	init();
+    	obj1.scaleTheObj(3);
+    	
     }
     
     protected void redraw() {
     	// get bounding box
-    	int[] stimBox = getStimBox(); 
+    	int[] stimBox = getStimBox();
     	int minX  = stimBox[0], minY  = stimBox[1];
     	int nPixX = stimBox[2], nPixY = stimBox[3];
-    	
+
     	// read from frame buffer
     	GL11.glPixelStorei(GL11.GL_PACK_ALIGNMENT, 1);
         ByteBuffer redPixels = ByteBuffer.allocateDirect(nPixX*nPixY);
         GL11.glReadPixels(minX,minY, nPixX, nPixY, GL11.GL_RED, GL11.GL_UNSIGNED_BYTE, redPixels);
-        
+
         // convert to matrix
         double[][] orig_pixels = byteBufferToComplexMatrix(redPixels,nPixX,nPixY);
         double[][] pixels = normalizeBackground(orig_pixels,nPixX,nPixY);
-        
+
         // generate random matrix
         double[][] randPixels = genRandMatrix(nPixX,nPixY*2);
-        
+
         // do fft of image
 		DoubleFFT_2D fftOfShape = new DoubleFFT_2D(nPixX,nPixY);
 		fftOfShape.complexForward(pixels);
 		ComplexMatrix shapeMatrix = new ComplexMatrix(nPixX,nPixY,pixels);
-        
+
         // do fft of random image
         DoubleFFT_2D fftOfRand = new DoubleFFT_2D(nPixX,nPixY);
         fftOfRand.complexForward(randPixels);
         ComplexMatrix randMatrix = new ComplexMatrix(nPixX,nPixY,randPixels);
-        
+
         // add random phase to image phase
         shapeMatrix.addPhase(randMatrix.getPhase());
-        
+
         // do ifft with scrambled phase
         double[][] matrixForIfft = shapeMatrix.getRealImag();
         DoubleFFT_2D inv_fftOfShape = new DoubleFFT_2D(nPixX,nPixY);
         inv_fftOfShape.complexInverse(matrixForIfft,true);
-        
+
         // get pixels to write to frame buffer
         ByteBuffer allPixels = ByteBuffer.allocateDirect(nPixX*nPixY*4);
         GL11.glReadPixels(minX,minY, nPixX, nPixY, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, allPixels);
-        
+
         // get byte buffer to write
         ByteBuffer pixelsToWrite = getByteBufferToWrite(matrixForIfft,allPixels,nPixX,nPixY);
-        
+
         // write byte buffer to framebuffer
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_STENCIL_BUFFER_BIT);
         GL11.glClearColor(0.5f, 0.5f, 0.5f, 0f);
@@ -4101,14 +4101,14 @@ public class MatchStick implements Drawable {
     private ByteBuffer getByteBufferToWrite(double[][] complexMatrixToWrite, ByteBuffer allPixels, int nx, int ny) {
     	ByteBuffer modifiedPixels = ByteBuffer.allocateDirect(nx*ny*4);
     	allPixels.rewind();
-        
+
         for(int i=0; i<ny; i++) {
 			for (int j=0; j<nx; j++) {
 		        byte r = allPixels.get();
 		        byte g = allPixels.get();
 		        byte b = allPixels.get();
 		        int  a = allPixels.get() & 0xff;
-		        
+
 		        if (a > 0) {
 		        	int col = (int)(complexMatrixToWrite[j][2*i]);
 		        	modifiedPixels.put((byte)col);
@@ -4121,39 +4121,39 @@ public class MatchStick implements Drawable {
 		        	modifiedPixels.put(b);
 		        	modifiedPixels.put((byte)0);
 		        }
-		        	
+
 			}
 		}
-    	
+
         modifiedPixels.rewind();
 		return modifiedPixels;
 	}
 
 	private double[][] normalizeBackground(double[][] orig_pixels, int nx, int ny) {
     	double[][] pixels = new double[nx][2*ny];
-    	
+
         double nPix = 0;
         double pix = 0;
-        
+
         for(int i=0; i<nx; i++)
 			for (int j=0; j<2*ny; j+=2)
 		        if (orig_pixels[i][j] != 127) {
 		        	pix += orig_pixels[i][j];
 		        	nPix++;
 	        	}
-        
-        double newBackground = pix/nPix; 
-        
+
+        double newBackground = pix/nPix;
+
         for(int i=0; i<nx; i++)
 			for (int j=0; j<2*ny; j+=2) {
 				pixels[i][j+1] = 0;
-				
+
 		        if (orig_pixels[i][j] == 127)
 		        	pixels[i][j] = newBackground;
 		        else
 		        	pixels[i][j] = orig_pixels[i][j];
 			}
-        
+
         return pixels;
 	}
 
@@ -4167,37 +4167,37 @@ public class MatchStick implements Drawable {
 
 	private int[] getStimBox() {
     	int minX, minY, maxX, maxY;
-        
+
         ByteBuffer viewport_byte = ByteBuffer.allocateDirect(16 * 4);
         viewport_byte.order(ByteOrder.LITTLE_ENDIAN);
         IntBuffer viewport = viewport_byte.asIntBuffer();
         GL11.glGetInteger(GL11.GL_VIEWPORT, viewport);
-        
+
         ByteBuffer modelview_byte = ByteBuffer.allocateDirect(16 * 4);
         modelview_byte.order(ByteOrder.LITTLE_ENDIAN);
         FloatBuffer modelview = modelview_byte.asFloatBuffer();
         GL11.glGetFloat( GL11.GL_MODELVIEW_MATRIX, modelview );
-        
+
         ByteBuffer projection_byte = ByteBuffer.allocateDirect(16 * 4);
         projection_byte.order(ByteOrder.LITTLE_ENDIAN);
         FloatBuffer projection = projection_byte.asFloatBuffer();
         GL11.glGetFloat( GL11.GL_PROJECTION_MATRIX, projection );
-        
+
         FloatBuffer minPos = FloatBuffer.allocate(3);
         GLU.gluProject((float)boundingBox[0].x,(float)boundingBox[0].y,0.0f,modelview,projection,viewport,minPos);
-        
+
         FloatBuffer maxPos = FloatBuffer.allocate(3);
         GLU.gluProject((float)boundingBox[1].x,(float)boundingBox[1].y,0.0f,modelview,projection,viewport,maxPos);
-        
+
         minX = (int)minPos.get(0);
         minY = (int)minPos.get(1);
-        
+
         maxX = (int)maxPos.get(0);
         maxY = (int)maxPos.get(1);
-        
+
         int nPixX = maxX - minX;
         int nPixY = maxY - minY;
-        
+
         int[] stimBox = {minX, minY, nPixX, nPixY};
         return stimBox;
     }
@@ -4205,7 +4205,7 @@ public class MatchStick implements Drawable {
 	private double[][] byteBufferToComplexMatrix(ByteBuffer color, int nPixX, int nPixY) {
     	double[][] pixels = new double[nPixX][2*nPixY];
         color.rewind();
-        
+
         for(int i=0; i<nPixY; i++) {
 			for (int j=0; j<nPixX; j++) {
 		        int a = color.get() & 0xff;
@@ -4219,7 +4219,7 @@ public class MatchStick implements Drawable {
     public MStickObj4Smooth getSmoothObj() {
     	return obj1;
     }
-    
+
     public int getNComponent() {
     	return nComponent;
     }
