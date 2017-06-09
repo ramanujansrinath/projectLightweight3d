@@ -6,6 +6,7 @@ import javax.vecmath.Point3d;
 import javax.vecmath.Vector3d;
 
 import org.lwjgl.opengl.GL11;
+import org.xper.utils.RGBColor;
 
 public class MStickObj4Smooth {
     public int nComponent;
@@ -26,6 +27,8 @@ public class MStickObj4Smooth {
     double xLim_min = 500, xLim_max = -500;
     double yLim_min = 500, yLim_max = -500;
     double zLim_min = 500, zLim_max = -500;
+    
+    RGBColor stimColor;
 
     public void setInfo(int inVect, Point3d[] ivect_info, Vector3d[] inormMat_info, int inFac, int[][] ifacInfo)
     {
@@ -173,7 +176,7 @@ public class MStickObj4Smooth {
 
     }
     public void drawVect() {
-		GL11.glColor3f(1.0f, 1.0f, 1.0f);
+		GL11.glColor3f(stimColor.getRed(),stimColor.getGreen(),stimColor.getBlue());
 		GL11.glEnable(GL11.GL_LIGHTING);
   
 		for (int i=0; i< nFac; i++) {
@@ -1100,6 +1103,10 @@ public class MStickObj4Smooth {
         box[1].z = zLim_max;
 
         return box;
+    }
+    
+    public void setStimColor(RGBColor color) {
+    	this.stimColor = color;
     }
 }
 
