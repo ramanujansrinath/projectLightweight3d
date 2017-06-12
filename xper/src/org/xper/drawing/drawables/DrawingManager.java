@@ -3,8 +3,6 @@ package org.xper.drawing.drawables;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.lwjgl.opengl.Display;
-import org.lwjgl.opengl.DisplayMode;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.PixelFormat;
 import org.xper.drawing.drawables.Drawable;
@@ -23,8 +21,6 @@ public class DrawingManager implements Drawable {
 	int stimCounter = 0;
 	RGBColor background;
 	
-	String imageFolderName = "";
-	
 	int height;
 	int width;
 	
@@ -33,20 +29,13 @@ public class DrawingManager implements Drawable {
 	BaseWindow window;
 	AbstractRenderer renderer;
 	
-	public DrawingManager() {
-		super();
-		DisplayMode mode = Display.getDisplayMode();
-		width = mode.getWidth() / 2;
-		height = mode.getHeight() / 2;
-	}
-	
 	public DrawingManager(int height, int width) {
 		super();
 		this.height = height;
 		this.width = width;
 	}
 	
-	public void drawStimuli() {
+	public void drawStimuli(boolean saveToFile, boolean saveToDb) {
 		window = new BaseWindow(height,width);
 		
 		PixelFormat pixelFormat = new PixelFormat(0, 8, 1, 4);
@@ -69,7 +58,10 @@ public class DrawingManager implements Drawable {
 			GL11.glClearColor(background.getRed(),background.getGreen(),background.getBlue(),0);			
 			renderer.draw(this);
 			window.swapBuffers();
-			pngMaker.saveImage(stimObjIds.get(stimCounter),height,width, imageFolderName);
+			if (saveToFile)
+				pngMaker.saveImageToFile(stimObjIds.get(stimCounter));
+			if (saveToDb)
+				pngMaker.saveImageToDb(stimObjIds.get(stimCounter));
 			try {
 				Thread.sleep(2000);
 			} catch (InterruptedException e) {
@@ -103,10 +95,6 @@ public class DrawingManager implements Drawable {
 
 	public void setRenderer(AbstractRenderer renderer) {
 		this.renderer = renderer;
-	}
-
-	public void setImageFolderName(String folderName) {
-		this.imageFolderName = folderName;
 	}
 
 	public void setPngMaker(PNGmaker pngMaker) {

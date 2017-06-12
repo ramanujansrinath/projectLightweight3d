@@ -11,30 +11,32 @@ import java.util.List;
 import org.jzy3d.plot3d.rendering.image.GLImage;
 import org.lwjgl.opengl.GL11;
 import org.xper.drawing.stick.MatchStick;
+import org.xper.utils.dbUtil;
 
 public class PNGmaker {
 	int height = 512;
 	int width = 512;
+	String imageFolderName = "";
+	boolean saveToDb = false;
+	boolean saveToFile = false;
+	dbUtil dbUtilObj;
 	
 	public PNGmaker() {}
 
-	public void createAndSavePNGsfromObjs(List<MatchStick> objs,List<Long> stimObjIds,String imageFolderName) {
+	public void createAndSavePNGsfromObjs(List<MatchStick> objs,List<Long> stimObjIds) {	
 		DrawingManager testWindow = new DrawingManager(height,width);
 		testWindow.setBackgroundColor(0.3f,0.3f,0.3f);
 		testWindow.setPngMaker(this);
-		testWindow.setImageFolderName(imageFolderName);
-		System.out.println("creating and saving PNGs...");
 
 		testWindow.setStimObjs(objs);
 		testWindow.setStimObjIds(stimObjIds);
 		
-		testWindow.drawStimuli();				// draw object
+		testWindow.drawStimuli(saveToFile,saveToDb);				// draw object
 		testWindow.close();
-		System.out.println("...done saving PNGs");
 	}
 	
-	public void saveImage(long stimObjId, int height, int width,String imageFolderName) {
-		byte[] data = screenShotBinary(width,height);  
+	public void saveImageToFile(long stimObjId) {
+		byte[] data = screenShotBinary();  
 
 		try {
 			FileOutputStream fos = new FileOutputStream(imageFolderName + "/" + stimObjId + ".png");
@@ -45,8 +47,13 @@ public class PNGmaker {
 			e.printStackTrace();
 		}
 	}
-
-	private byte[] screenShotBinary(int width, int height) 
+	
+	public void saveImageToDb(long stimObjId) {
+		byte[] data = screenShotBinary();  
+		dbUtilObj.writeThumbnail(stimObjId,data);
+	}
+	
+	private byte[] screenShotBinary() 
 	{
 		ByteBuffer framebytes = allocBytes(width * height * 3);
 
@@ -74,8 +81,8 @@ public class PNGmaker {
 			image.setRGB(0, 0, width, height, pixels, 0, width);
 
 			javax.imageio.ImageIO.write(image, "png", out);
+			
 			byte[] data = out.toByteArray();
-
 			return data;
 		}
 		catch (Exception e) {
@@ -84,9 +91,21 @@ public class PNGmaker {
 		}
 	}
 
-	public static ByteBuffer allocBytes(int howmany) {
+	private static ByteBuffer allocBytes(int howmany) {
 		final int SIZE_BYTE = 4;
 		return ByteBuffer.allocateDirect(howmany * SIZE_BYTE).order(ByteOrder.nativeOrder());
 	}
 	
+	public void setImageFolderName(String ifn) {
+		this.imageFolderName = ifn;
+	}
+	public void setDbUtilObj(dbUtil dbUtilObj) {
+		this.dbUtilObj = dbUtilObj;
+	}
+	public void setSaveToFile(boolean saveToFile) {
+		this.saveToFile = saveToFile;
+	}
+	public void setSaveToDb(boolean saveToDb) {
+		this.saveToDb = saveToDb;
+	}
 }

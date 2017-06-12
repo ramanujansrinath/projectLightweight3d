@@ -1,10 +1,16 @@
 package org.xper.utils;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+
+import sun.java2d.loops.Blit;
 
 public class dbUtil {
 	Connection conn;
@@ -25,7 +31,7 @@ public class dbUtil {
 		String stickSpec = "";
 		try {
 			Statement stmt = conn.createStatement();
-			String query = "select mstickspec from stimobjdata where id = " + id + " ;";
+			String query = "select mstickspec from stimobjdata where id = " + id;
 			ResultSet rs = stmt.executeQuery(query);
 			rs.next();
 			stickSpec = rs.getString("mstickspec");
@@ -118,6 +124,45 @@ public class dbUtil {
 			e.printStackTrace();
 		}
 		return new float[]{x,y,z,1f};
+	}
+	
+	public void writeFaceSpec(Long id, String faceSpec) {
+		try {
+			String query = "update stimobjdata_vert set faceSpec = ? where id = ?";
+			PreparedStatement stmt = conn.prepareStatement(query);
+			stmt.setString(1, faceSpec);
+			stmt.setLong(2, id);
+			stmt.executeUpdate();
+			stmt.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void writeVertSpec(Long id, String vertSpec) {
+		try {
+			String query = "update stimobjdata_vert set vertSpec = ? where id = ?";
+			PreparedStatement stmt = conn.prepareStatement(query);
+			stmt.setString(1, vertSpec);
+			stmt.setLong(2, id);
+			stmt.executeUpdate();
+			stmt.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void writeThumbnail(Long id, byte[] thumbnail) {
+		try {
+			String query = "update thumbnail set data = ? where id = ?";
+			PreparedStatement stmt = conn.prepareStatement(query);
+			stmt.setBytes(1, thumbnail);
+			stmt.setLong(2, id);
+			stmt.executeUpdate();
+			stmt.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public void finalize() {

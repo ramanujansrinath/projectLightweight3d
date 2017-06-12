@@ -3,6 +3,7 @@ package org.xper.generate;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.lwjgl.Sys;
 import org.xper.drawing.drawables.PNGmaker;
 import org.xper.drawing.stick.MStickSpec;
 import org.xper.drawing.stick.MatchStick;
@@ -14,7 +15,6 @@ public class saveThumbAndVert {
 		dbUtil dbUtilObj = new dbUtil();
 		String stickSpec = dbUtilObj.getMstickSpec(id);
 		
-		String folderPath = "/Users/ecpc32/Desktop/temp";
 		List<Long> ids = new ArrayList<Long>();
 		List<MatchStick> objs = new ArrayList<MatchStick>();
 		
@@ -28,10 +28,16 @@ public class saveThumbAndVert {
 		objs.get(0).setLightPosition(dbUtilObj.getLightPosition(id));
 
 		PNGmaker pngMaker = new PNGmaker();
-		pngMaker.createAndSavePNGsfromObjs(objs, ids, folderPath);
+		pngMaker.setDbUtilObj(dbUtilObj);
+		pngMaker.setSaveToDb(true);
+		System.out.println(id + ": Saving PNG");
+		pngMaker.createAndSavePNGsfromObjs(objs, ids);
 		
 		MStickSpec spec = new MStickSpec();
 		spec.setMStickInfo(objs.get(0));
-		spec.writeInfo2File(folderPath + "/" + id);
+		System.out.println(id + ": Saving FaceSpec");
+		dbUtilObj.writeFaceSpec(id,spec.getFaceSpec());
+		System.out.println(id + ": Saving VertSpec");
+		dbUtilObj.writeVertSpec(id,spec.getVertSpec());
 	}
 }

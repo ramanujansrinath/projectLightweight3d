@@ -306,7 +306,7 @@ public class MStickSpec {
      */
     public void writeInfo2File(String fname) {
     	
-    	String outStr = facToStr(getFacInfo(), getNFac());
+    	String outStr = getFaceSpec();
         try {
         	BufferedWriter out = new BufferedWriter(new FileWriter(fname + "_face.txt"));
             
@@ -317,7 +317,7 @@ public class MStickSpec {
         	System.out.println(e);
     	}
         
-        outStr = vectToStr(getVectInfo(),getNVect());
+        outStr = getVertSpec();
         try {
         	BufferedWriter out = new BufferedWriter(new FileWriter(fname + "_vert.txt"));
             
@@ -339,6 +339,14 @@ public class MStickSpec {
         } catch (Exception e) { 
         	System.out.println(e);
     	}
+    }
+    
+    public String getVertSpec() {
+    	return vectToStr(getVectInfo(),getNVect());
+    }
+    
+    public String getFaceSpec() {
+    	return facToStr(getFacInfo(), getNFac());
     }
     
     public String toXml () {
@@ -453,7 +461,6 @@ public class MStickSpec {
 	
 
     public int getNFac() {
-        // TODO Auto-generated method stub
         return this.vertex.nFac;
     }
     public int getNVect(){
