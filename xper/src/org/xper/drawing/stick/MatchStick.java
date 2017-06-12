@@ -1902,7 +1902,7 @@ public class MatchStick implements Drawable {
             this.MutateSUB_reAssignJunctionRadius();
 
             // 6. translate the shape, so that the first component is centered at origin.
-            this.centerShapeAtOrigin(-1);
+//            this.centerShapeAtOrigin(-1);
 
             if (!this.validMStickSize())
                 successMutateTillNow = false;
