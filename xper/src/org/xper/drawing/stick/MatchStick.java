@@ -19,6 +19,9 @@ import org.lwjgl.util.glu.GLU;
 import org.xper.drawing.drawables.Drawable;
 import org.xper.utils.ComplexMatrix;
 import org.xper.utils.RGBColor;
+
+import com.sun.tools.doclets.formats.html.resources.standard_zh_CN;
+
 import org.xper.utils.Lighting;
 import org.xper.utils.Lighting.Material;
 import org.jtransforms.fft.DoubleFFT_2D;
@@ -55,6 +58,7 @@ public class MatchStick implements Drawable {
 	private boolean doClouds;
 	private Point3d[] boundingBox;
 	private RGBColor stimColor;
+	float[] light_position = {0.0f, 200.0f, 200.0f, 1.0f};
 
     public MatchStick() {}
 
@@ -764,6 +768,8 @@ public class MatchStick implements Drawable {
     			comp[i].drawSurfPt(colorCode[i-1],scaleForMAxisShape);
             }
         else {
+        	if (Material.valueOf(textureType) == Material.TWOD) 
+        		obj1.setDoLighting(false);
         	obj1.setStimColor(stimColor);
         	obj1.drawVect();
         	boundingBox = obj1.getBoundingBox();
@@ -4005,7 +4011,6 @@ public class MatchStick implements Drawable {
         // y: vertical: positive up
         // z: in-out: positive out
         // w: directional or not: 1=non-directional
-        float[] light_position = {0.0f, 200.0f, 200.0f, 1.0f};
 
         FloatBuffer mat_specularBuffer = BufferUtils.createFloatBuffer(mat_specular.length);
         mat_specularBuffer.put(mat_specular).flip();
@@ -4040,13 +4045,12 @@ public class MatchStick implements Drawable {
     public void setTextureType(String tt) {
     	textureType = tt;
     }
-
-    public void drawBlur() {
-    	textureType = "TWOD";
-    	init();
-    	obj1.scaleTheObj(3);
-    	
+    
+    public void setLightPosition(float[] lp) {
+    	light_position = lp;
     }
+
+   
     
     protected void redraw() {
     	// get bounding box

@@ -2,10 +2,10 @@ package org.xper.utils;
 
 public class Lighting {
 	RGBColor color = new RGBColor(1f,0f,0f);
-	Material material = Material.SPEC;
+	Material material = Material.SPECULAR;
 	
 	public enum Material {
-		SPEC,SHADE
+		SPECULAR,SHADE,TWOD
 	}
 	
 	float shine;

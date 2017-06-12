@@ -10,8 +10,7 @@ import org.xper.utils.dbUtil;
 
 public class saveThumbAndVert {
 	public static void main(String[] args) {
-		
-		Long id = 1493831632037575l;
+		Long id = 1496344499051525l;
 		dbUtil dbUtilObj = new dbUtil();
 		String stickSpec = dbUtilObj.getMstickSpec(id);
 		
@@ -26,6 +25,7 @@ public class saveThumbAndVert {
 		objs.get(0).setTextureType(dbUtilObj.getTextureType(id));
 		objs.get(0).setDoClouds(dbUtilObj.getDoClouds(id));
 		objs.get(0).setStimColor(dbUtilObj.getStimColor(id));
+		objs.get(0).setLightPosition(dbUtilObj.getLightPosition(id));
 
 		PNGmaker pngMaker = new PNGmaker();
 		pngMaker.createAndSavePNGsfromObjs(objs, ids, folderPath);

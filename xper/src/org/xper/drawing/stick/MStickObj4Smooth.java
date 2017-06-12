@@ -28,6 +28,7 @@ public class MStickObj4Smooth {
     double yLim_min = 500, yLim_max = -500;
     double zLim_min = 500, zLim_max = -500;
     
+    boolean doLighting = true;
     RGBColor stimColor;
 
     public void setInfo(int inVect, Point3d[] ivect_info, Vector3d[] inormMat_info, int inFac, int[][] ifacInfo)
@@ -177,7 +178,8 @@ public class MStickObj4Smooth {
     }
     public void drawVect() {
 		GL11.glColor3f(stimColor.getRed(),stimColor.getGreen(),stimColor.getBlue());
-		GL11.glEnable(GL11.GL_LIGHTING);
+		if (doLighting)
+			GL11.glEnable(GL11.GL_LIGHTING);
   
 		for (int i=0; i< nFac; i++) {
 			GL11.glBegin(GL11.GL_TRIANGLES);
@@ -1107,6 +1109,10 @@ public class MStickObj4Smooth {
     
     public void setStimColor(RGBColor color) {
     	this.stimColor = color;
+    }
+    
+    public void setDoLighting(boolean dl) {
+    	this.doLighting = dl;
     }
 }
 

@@ -92,6 +92,33 @@ public class dbUtil {
 		}
 		return new RGBColor(red,green,blue);
 	}
+	
+	public float[] getLightPosition(Long id) {
+		float x = 0, y = 0, z = 0;
+		try {
+			Statement stmt = conn.createStatement();
+
+			String query = "SELECT extractvalue(javaspec, '/StimSpec/shape/lightingPos/x') as 'x' FROM stimobjdata WHERE id = " + id;
+			ResultSet rs = stmt.executeQuery(query);
+			rs.next();
+			x = Float.parseFloat(rs.getString("x"));
+
+			query = "SELECT extractvalue(javaspec, '/StimSpec/shape/lightingPos/y') as 'y' FROM stimobjdata WHERE id = " + id;
+			rs = stmt.executeQuery(query);
+			rs.next();
+			y = Float.parseFloat(rs.getString("y"));
+
+			query = "SELECT extractvalue(javaspec, '/StimSpec/shape/lightingPos/z') as 'z' FROM stimobjdata WHERE id = " + id;
+			rs = stmt.executeQuery(query);
+			rs.next();
+			z = Float.parseFloat(rs.getString("z"));
+
+			stmt.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return new float[]{x,y,z,1f};
+	}
 
 	public void finalize() {
 		close();
