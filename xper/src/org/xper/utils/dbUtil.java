@@ -12,7 +12,7 @@ public class dbUtil {
 	public dbUtil() {
 		try {
 			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager.getConnection("jdbc:mysql://172.30.6.27:3306/ram_170105_3dma", "xper_rw", "up2nite");
+			conn = DriverManager.getConnection("jdbc:mysql://172.30.6.27:3306/ram_170105_3dma?autoReconnect=true&useSSL=false", "xper_rw", "up2nite");
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
