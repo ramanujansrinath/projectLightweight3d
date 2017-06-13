@@ -20,8 +20,6 @@ import org.xper.drawing.drawables.Drawable;
 import org.xper.utils.ComplexMatrix;
 import org.xper.utils.RGBColor;
 
-import com.sun.tools.doclets.formats.html.resources.standard_zh_CN;
-
 import org.xper.utils.Lighting;
 import org.xper.utils.Lighting.Material;
 import org.jtransforms.fft.DoubleFFT_2D;

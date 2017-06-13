@@ -1,16 +1,11 @@
 package org.xper.utils;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-
-import sun.java2d.loops.Blit;
 
 public class dbUtil {
 	Connection conn;
