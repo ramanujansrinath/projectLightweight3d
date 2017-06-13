@@ -49,7 +49,7 @@ public class TubeComp
  	public TubeComp()
  	{
  		// init the facInfo
-		facInfo = sampleFaceInfo.getFacInfo();
+		facInfo = SampleFaceInfo.getFacInfo();
 		
         }
 

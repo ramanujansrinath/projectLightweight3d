@@ -11,7 +11,7 @@ import java.util.List;
 import org.jzy3d.plot3d.rendering.image.GLImage;
 import org.lwjgl.opengl.GL11;
 import org.xper.drawing.stick.MatchStick;
-import org.xper.utils.dbUtil;
+import org.xper.utils.DbUtil;
 
 public class PNGmaker {
 	int height = 512;
@@ -19,7 +19,7 @@ public class PNGmaker {
 	String imageFolderName = "";
 	boolean saveToDb = false;
 	boolean saveToFile = false;
-	dbUtil dbUtilObj;
+	DbUtil dbUtilObj;
 	
 	public PNGmaker() {}
 
@@ -99,7 +99,7 @@ public class PNGmaker {
 	public void setImageFolderName(String ifn) {
 		this.imageFolderName = ifn;
 	}
-	public void setDbUtilObj(dbUtil dbUtilObj) {
+	public void setDbUtilObj(DbUtil dbUtilObj) {
 		this.dbUtilObj = dbUtilObj;
 	}
 	public void setSaveToFile(boolean saveToFile) {

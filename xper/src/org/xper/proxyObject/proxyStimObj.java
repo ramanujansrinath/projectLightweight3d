@@ -6,11 +6,11 @@ import java.util.List;
 import org.xper.drawing.drawables.PNGmaker;
 import org.xper.drawing.stick.MStickSpec;
 import org.xper.drawing.stick.MatchStick;
-import org.xper.utils.dbUtil;
+import org.xper.utils.DbUtil;
 
-public class proxyStimObj {
+public class ProxyStimObj {
 	List<Long> ids = new ArrayList<Long>();
-	dbUtil dbUtilObj = new dbUtil();
+	DbUtil dbUtilObj = new DbUtil();
 	List<MatchStick> objs = new ArrayList<MatchStick>();
 	
 	public void retrieveSpec() {
@@ -61,7 +61,7 @@ public class proxyStimObj {
 	
 	
 	public static void main(String[] args) {
-		proxyStimObj stimObj = new proxyStimObj();
+		ProxyStimObj stimObj = new ProxyStimObj();
 		
 		List<Long> ids = new ArrayList<Long>();
 		ids.add(1497203447767928l);

@@ -8,7 +8,7 @@ import org.xper.drawing.stick.MStickSpec;
 import org.xper.drawing.stick.MatchStick;
 import org.xper.utils.RGBColor;
 
-public class morphStimuli {
+public class MorphStimuli {
 	public static void main(String[] args) {
 		String folderPath = args[0];
 		List<Long> ids = new ArrayList<Long>();

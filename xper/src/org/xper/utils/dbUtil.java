@@ -7,10 +7,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-public class dbUtil {
+public class DbUtil {
 	Connection conn;
 
-	public dbUtil() {
+	public DbUtil() {
 		try {
 			Class.forName("com.mysql.jdbc.Driver");
 			conn = DriverManager.getConnection("jdbc:mysql://172.30.6.27:3306/ram_170105_3dma?autoReconnect=true&useSSL=false", "xper_rw", "up2nite");
