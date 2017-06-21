@@ -11,7 +11,7 @@ import javax.vecmath.AxisAngle4d;
 import javax.vecmath.Point3d;
 import javax.vecmath.Vector3d;
 
-import org.xper.drawing.stick.stickMath_lib;
+import org.xper.drawing.stick.StickMathLib;
 
 import org.lwjgl.opengl.GL11;
 
@@ -366,7 +366,7 @@ public class TubeComp
 		   {
 			Vector3d nowvec = new Vector3d();
 			double nowrot_deg = ( (double)(j-1) / (double)ringSample ) * 2 * Math.PI;
-                        nowvec = stickMath_lib.rotVecArAxis(boundNorm1, tangent, nowrot_deg); // this is 1 degree in radian		
+                        nowvec = StickMathLib.rotVecArAxis(boundNorm1, tangent, nowrot_deg); // this is 1 degree in radian		
 			
 			ringPt[i][j] = new Point3d();
 			ringPt[i][j].scaleAdd( now_rad, nowvec, mpos);
@@ -387,10 +387,10 @@ public class TubeComp
 
 		Vector3d nowvec = new Vector3d();
 
-		nowvec = stickMath_lib.rotVecArAxis(boundNorm1_uStart, rotAxis, 0.016726646259972); // this is 1 degree in radian		
+		nowvec = StickMathLib.rotVecArAxis(boundNorm1_uStart, rotAxis, 0.016726646259972); // this is 1 degree in radian		
 		d2 = nowvec.angle(tangent);
 
-		nowvec = stickMath_lib.rotVecArAxis(boundNorm1_uStart, rotAxis, -0.016726646259972); // this is 1 degree in radian			
+		nowvec = StickMathLib.rotVecArAxis(boundNorm1_uStart, rotAxis, -0.016726646259972); // this is 1 degree in radian			
 		d3 = nowvec.angle(tangent);
 		double deg_sign =100.0;
 		if (d2 < d1 )
@@ -407,7 +407,7 @@ public class TubeComp
 		for ( j = 1 ; j <= capSample ; j++)
 		{
                    deg = ((double)(j-1)/ (double)capSample) *  deg_span * deg_sign;		   
-		   nowvec = stickMath_lib.rotVecArAxis(boundNorm1_uStart, rotAxis, deg);
+		   nowvec = StickMathLib.rotVecArAxis(boundNorm1_uStart, rotAxis, deg);
 		  
 		//System.out.println( "now vec new_ " + nowvec);
                    Vector3d nowDirect = new Vector3d();
@@ -417,7 +417,7 @@ public class TubeComp
             	   for ( i = 1 ; i <= ringSample; i++)
 		   {
                	      double nowrot_deg = ((double)(i-1) / (double)ringSample) * 2 * Math.PI; // In this formula, we don't eventually rotate to 2pi
-		      nowvec = stickMath_lib.rotVecArAxis(nowDirect, mAxisInfo.mTangent[1], nowrot_deg);                      
+		      nowvec = StickMathLib.rotVecArAxis(nowDirect, mAxisInfo.mTangent[1], nowrot_deg);                      
                       
                       //DGdata(1).cap(j,i,:) = DGdata(1).mpos + nowvec; ( matlab format)
 		      cap_poleN[j][i] = new Point3d();
@@ -436,10 +436,10 @@ public class TubeComp
 
 		Vector3d nowvec = new Vector3d();
 
-		nowvec = stickMath_lib.rotVecArAxis(boundNorm1_uEnd, rotAxis, 0.016726646259972); // this is 1 degree in radian		
+		nowvec = StickMathLib.rotVecArAxis(boundNorm1_uEnd, rotAxis, 0.016726646259972); // this is 1 degree in radian		
 		d2 = nowvec.angle(tangent);
 
-		nowvec = stickMath_lib.rotVecArAxis(boundNorm1_uEnd, rotAxis, -0.016726646259972); // this is 1 degree in radian			
+		nowvec = StickMathLib.rotVecArAxis(boundNorm1_uEnd, rotAxis, -0.016726646259972); // this is 1 degree in radian			
 		d3 = nowvec.angle(tangent);
 		double deg_sign =100.0;
 		if (d2 < d1 )
@@ -457,7 +457,7 @@ public class TubeComp
 		for ( j = 1 ; j <= capSample ; j++)
 		{
                    deg = ((double)(j-1)/ (double)capSample) *  deg_span * deg_sign;		   
-		   nowvec = stickMath_lib.rotVecArAxis(boundNorm1_uEnd, rotAxis, deg);
+		   nowvec = StickMathLib.rotVecArAxis(boundNorm1_uEnd, rotAxis, deg);
 		  
 		//System.out.println( "now vec new_ " + nowvec);
                    Vector3d nowDirect = new Vector3d();
@@ -467,7 +467,7 @@ public class TubeComp
             	   for ( i = 1 ; i <= ringSample; i++)
 		   {
                	      double nowrot_deg = ((double)(i-1) / (double)ringSample) * 2 * Math.PI; // In this formula, we don't eventually rotate to 2pi
-		      nowvec = stickMath_lib.rotVecArAxis(nowDirect, mAxisInfo.mTangent[51], nowrot_deg);                      
+		      nowvec = StickMathLib.rotVecArAxis(nowDirect, mAxisInfo.mTangent[51], nowrot_deg);                      
                       
                       //DGdata(1).cap(j,i,:) = DGdata(1).mpos + nowvec; ( matlab format)
 		      cap_poleS[j][i] = new Point3d();

@@ -7,7 +7,7 @@ import javax.vecmath.AxisAngle4d;
 import javax.vecmath.Point3d;
 import javax.vecmath.Vector3d;
 
-import org.xper.drawing.stick.stickMath_lib;
+import org.xper.drawing.stick.StickMathLib;
 
 import org.lwjgl.opengl.GL11;
 
@@ -75,7 +75,7 @@ public class MAxisArc
 		 while (true) {
     		 for (i=1; i<=4; i++) {
     			 chgFlg[i] = false;
-    			 if ( stickMath_lib.rand01() < volatileRate)
+    			 if ( StickMathLib.rand01() < volatileRate)
     				 chgFlg[i] = true;
     		 }
     		 int a = 3;
@@ -109,26 +109,26 @@ public class MAxisArc
 			double oriRad = inArc.rad;
 			if ( oriRad <= 0.6 * RadView )  { // origianlly small Rad arc
 				double[] prob = {0.5, 1.0};
-				int choice = stickMath_lib.pickFromProbDist( prob);
+				int choice = StickMathLib.pickFromProbDist( prob);
 				if ( choice == 1) {
 					while (true) {
-						newRad = (stickMath_lib.rand01() * 0.4 + 0.2) * RadView;
+						newRad = (StickMathLib.rand01() * 0.4 + 0.2) * RadView;
 						totalRange = 0.4 * RadView;
 						if ( Math.abs( newRad - oriRad) > 0.2 * totalRange )
 							break;
 					}
 				}
 				else // chg to medium curvature regime
-					newRad = (stickMath_lib.rand01() * 5.4 + 0.6) * RadView;
+					newRad = (StickMathLib.rand01() * 5.4 + 0.6) * RadView;
 			}
 			else if ( oriRad <= 6.0 * RadView) { // originall in medium regime
 	 			double[] prob = {0.25, 0.75, 1.0};
-				int choice = stickMath_lib.pickFromProbDist( prob);
+				int choice = StickMathLib.pickFromProbDist( prob);
 				if (choice == 1)
-					newRad = (stickMath_lib.rand01() * 0.4 + 0.2) * RadView;
+					newRad = (StickMathLib.rand01() * 0.4 + 0.2) * RadView;
 				else if ( choice == 2) {
 					while (true) {
-						newRad = (stickMath_lib.rand01() * 5.4 + 0.6) * RadView;
+						newRad = (StickMathLib.rand01() * 5.4 + 0.6) * RadView;
 						totalRange = 5.4 * RadView;
 						if ( Math.abs(newRad - oriRad) > 0.2 * totalRange)
 							break;
@@ -139,7 +139,7 @@ public class MAxisArc
 			}
 			else {// str8 original curvature
 				//always chg to medium curvature
-				newRad = (stickMath_lib.rand01() * 5.4 + 0.6) * RadView; 
+				newRad = (StickMathLib.rand01() * 5.4 + 0.6) * RadView; 
 			}
     	 } // mAxisCurvature if
 	 
@@ -150,7 +150,7 @@ public class MAxisArc
     		 double length_ub = Math.min( Math.PI * newRad, RadView);
     		 double l_range = length_ub - length_lb;
     		 while (true) { //pick value btw length_lb, length_ub, but not very near or very far from original value
-    			 newArcLen = stickMath_lib.randDouble( length_lb, length_ub);
+    			 newArcLen = StickMathLib.randDouble( length_lb, length_ub);
     			 if ( oriArcLen > length_ub || oriArcLen < length_lb) // no need to nearby check
     				 break;
     			 if ( Math.abs( newArcLen - oriArcLen) >= 0.2 * l_range && 
@@ -163,7 +163,7 @@ public class MAxisArc
     	if ( chgFlg[3] == true) {
     		Vector3d oriTangent = new Vector3d( inArc.mTangent[inArc.transRotHis_rotCenter]);
 		 	while (true) {
-			newTangent = stickMath_lib.randomUnitVec();
+			newTangent = StickMathLib.randomUnitVec();
 			double angle = newTangent.angle(oriTangent);
 			if ( angle >= orientationAngleRange[0] && angle <= orientationAngleRange[1]) // 15 ~ 30 degree
 				break;
@@ -173,8 +173,8 @@ public class MAxisArc
 	  if ( chgFlg[4] == true)
           {
 		double oriDevAngle = inArc.transRotHis_devAngle;
-		double diff = stickMath_lib.randDouble( Math.PI/6.0, Math.PI/3.0); // this diff is btw  30 - 60 degree
-		if ( stickMath_lib.rand01() < 0.5)
+		double diff = StickMathLib.randDouble( Math.PI/6.0, Math.PI/3.0); // this diff is btw  30 - 60 degree
+		if ( StickMathLib.rand01() < 0.5)
 			newDevAngle = oriDevAngle - diff;
 		else
 			newDevAngle = oriDevAngle + diff;
@@ -310,7 +310,7 @@ public class MAxisArc
 
          // randomly assign a branchPt value at the middle of the samplePts
            // Matlab: resultArc.branchPt =  ceil( ( resultArc.nSamplePts-39) .* rand() ) + 20; % all the middle pts
-         this.branchPt = stickMath_lib.randInt(26-5 , 26+5);
+         this.branchPt = StickMathLib.randInt(26-5 , 26+5);
 	
 
      }

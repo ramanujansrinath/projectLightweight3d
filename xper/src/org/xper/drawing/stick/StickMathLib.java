@@ -3,7 +3,6 @@ package org.xper.drawing.stick;
 // A class that save some of my common use static function
 
 
-import java.util.Date;
 import java.util.Random;
 
 import javax.media.j3d.Transform3D;
@@ -15,7 +14,7 @@ import javax.vecmath.Vector3d;
 *   June 5th 2008 <br>
 *   A static library class that storing common function I will use
 */
-public class stickMath_lib
+public class StickMathLib
 {
 	
 	/**
@@ -340,33 +339,6 @@ public class stickMath_lib
 		}
 		catch (Exception e) {}	
     }
-    
-    
-    
-    
-    // Get the X, Y, or Z of a point3d structure
-    
-/**
-    Main function for debug
-*/
-    public static void main(String[] args)
-    {
-    	Date test1 = new Date();
-    	System.out.println(test1.toString());
-    	Date test2 = new Date( test1.getTime());
-    	System.out.println(test2);
-    	System.out.println(test2.getTime());
-    	System.out.println(test1.getTime());
-    	Date test3 = new Date( 1L);
-    	System.out.println(test3.getTime());
-    	System.out.println(test3.toString());
-    	
-    	double[] probDist = {0.2, 0.4, 0.7, 1.0};
-    	int i;
-    	for (i=0; i<3; i++)
-    		System.out.println( pickFromProbDist(probDist));
-    	
-    	// 
-    }
+
     
 }
