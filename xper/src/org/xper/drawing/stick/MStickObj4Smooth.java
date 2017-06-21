@@ -215,19 +215,10 @@ public class MStickObj4Smooth {
 			GL11.glVertex3d( p3.x, p3.y, p3.z);
 			
 			GL11.glEnd();
-			
-			xLim_max = Math.max(xLim_max, p1.x); xLim_max = Math.max(xLim_max, p2.x); xLim_max = Math.max(xLim_max, p3.x);
-            yLim_max = Math.max(yLim_max, p1.y); yLim_max = Math.max(yLim_max, p2.y); yLim_max = Math.max(yLim_max, p3.y);
-            zLim_max = Math.max(zLim_max, p1.z); zLim_max = Math.max(zLim_max, p2.z); zLim_max = Math.max(zLim_max, p3.z);
-
-            xLim_min = Math.min(xLim_min, p1.x); xLim_min = Math.min(xLim_min, p2.x); xLim_min = Math.min(xLim_min, p3.x);
-            yLim_min = Math.min(yLim_min, p1.y); yLim_min = Math.min(yLim_min, p2.y); yLim_min = Math.min(yLim_min, p3.y);
-            zLim_min = Math.min(zLim_min, p1.z); zLim_min = Math.min(zLim_min, p2.z); zLim_min = Math.min(zLim_min, p3.z);
 		}
 		GL11.glDisable(GL11.GL_LIGHTING);
     }
-	
-    		
+     		
     public MStickObj4Smooth()
     {
         nComponent = 1;
@@ -1092,7 +1083,22 @@ public class MStickObj4Smooth {
     }
     
     
+    private void calculateBoundingBox() {
+	    for (int i=1; i<= nVect; i++) {
+			Point3d p1 = vect_info[i];
+			
+			xLim_max = Math.max(xLim_max, p1.x);
+	        yLim_max = Math.max(yLim_max, p1.y);
+	        zLim_max = Math.max(zLim_max, p1.z);
+	
+	        xLim_min = Math.min(xLim_min, p1.x);
+	        yLim_min = Math.min(yLim_min, p1.y);
+	        zLim_min = Math.min(zLim_min, p1.z);
+		}
+    }
+    
     public Point3d[] getBoundingBox() {
+    	calculateBoundingBox();
         Point3d[] box = new Point3d[2];
         box[0] = new Point3d();
         box[0].x = xLim_min;
