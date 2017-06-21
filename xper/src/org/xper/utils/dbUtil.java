@@ -121,6 +121,58 @@ public class DbUtil {
 		return new float[]{x,y,z,1f};
 	}
 	
+	public String getDescGenId() {
+		String descGenId = "";
+		try {
+			Statement stmt = conn.createStatement();
+			
+			String query = "SELECT currentExptPrefix,gaRun,genNum from DescriptiveInfo where tstamp = (select max(tstamp) from DescriptiveInfo)";
+			ResultSet rs = stmt.executeQuery(query);
+			rs.next();
+			String prefix = rs.getString("currentExptPrefix");
+			int runNum = rs.getInt("gaRun");
+			int genNum = rs.getInt("genNum");
+			
+			descGenId = prefix + "_r-" + runNum + "_g-" + genNum;
+			
+			stmt.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return descGenId;
+	}
+	
+	public long getIdForDescId(String did) {
+		Long id = 0l;
+		try {
+			Statement stmt = conn.createStatement();
+			String query = "SELECT id FROM stimobjdata WHERE descId = '" + did + "'";
+			ResultSet rs = stmt.executeQuery(query);
+			rs.next();
+			id = rs.getLong("id");
+			stmt.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return id;
+	}
+	
+	public int getStimPerLin() {
+		int stimPerLin = 0;
+		try {
+			Statement stmt = conn.createStatement();
+			String query = "SELECT extractvalue(val, '/GenerationInfo/stimPerLinCount') as 'stimPerLin' "
+					+ "FROM internalstate WHERE name = 'task_to_do_gen_ready'";
+			ResultSet rs = stmt.executeQuery(query);
+			rs.next();
+			stimPerLin = rs.getInt("stimPerLin");
+			stmt.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return stimPerLin;
+	}
+	
 	public void writeFaceSpec(Long id, String faceSpec) {
 		try {
 			String query = "update stimobjdata_vert set faceSpec = ? where id = ?";
@@ -149,10 +201,16 @@ public class DbUtil {
 	
 	public void writeThumbnail(Long id, byte[] thumbnail) {
 		try {
-			String query = "update thumbnail set data = ? where id = ?";
+			String query = "if exists (select id from thumbnail where id = ?) "
+							+ "update thumbnail set data = ? where id = ? "
+							+ "else "
+							+ "insert into thumbnail values(?,?) ";
 			PreparedStatement stmt = conn.prepareStatement(query);
-			stmt.setBytes(1, thumbnail);
-			stmt.setLong(2, id);
+			stmt.setLong(1, id);
+			stmt.setBytes(2, thumbnail);
+			stmt.setLong(3, id);
+			stmt.setLong(4, id);
+			stmt.setBytes(5, thumbnail);
 			stmt.executeUpdate();
 			stmt.close();
 		} catch (SQLException e) {
