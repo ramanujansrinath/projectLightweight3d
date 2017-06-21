@@ -7,6 +7,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.media.j3d.Transform3D;
 import javax.vecmath.AxisAngle4d;
@@ -25,7 +27,7 @@ import org.xper.utils.Lighting.Material;
 import org.jtransforms.fft.DoubleFFT_2D;
 
 public class MatchStick implements Drawable {
-    final double scaleForMAxisShape  = 40.0;
+    final double scaleForMAxisShape = 40;
 
     private double[] finalRotation;
     private Point3d finalShiftinDepth;
@@ -702,7 +704,7 @@ public class MatchStick implements Drawable {
         //double[] nCompDist = { 0, 0.1, 0.2, 0.4, 0.6, 0.8, 0.9, 1.00};
         //double[] nCompDist = {0, 0.05, 0.15, 0.35, 0.65, 0.85, 0.95, 1.00};
         double[] nCompDist = this.PARAM_nCompDist;
-        nComp = stickMath_lib.pickFromProbDist(nCompDist);
+        nComp = StickMathLib.pickFromProbDist(nCompDist);
 
         this.cleanData();
         //  debug
@@ -723,7 +725,7 @@ public class MatchStick implements Drawable {
 
           this.finalRotation = new double[3];
           for (int i=0; i<3; i++)
-              finalRotation[i] = stickMath_lib.randDouble(0, 360.0);
+              finalRotation[i] = StickMathLib.randDouble(0, 360.0);
 
           //debug
 
@@ -804,17 +806,17 @@ public class MatchStick implements Drawable {
         {
             if ( showDebug)
                 System.out.println("adding new MAxis on, now # " +  nowComp);
-            randNdx = stickMath_lib.rand01();
+            randNdx = StickMathLib.rand01();
             if (randNdx < PROB_addToEndorJunc)
             {
-                if (nJuncPt == 0 || stickMath_lib.rand01() < PROB_addToEnd_notJunc)
+                if (nJuncPt == 0 || StickMathLib.rand01() < PROB_addToEnd_notJunc)
                     addSuccess = this.Add_MStick(nowComp, 1);
                 else
                     addSuccess = this.Add_MStick(nowComp, 2);
             }
             else
             {
-                if (stickMath_lib.rand01() < PROB_addTiptoBranch)
+                if (StickMathLib.rand01() < PROB_addTiptoBranch)
                     addSuccess = this.Add_MStick(nowComp, 3);
                 else
                     addSuccess = this.Add_MStick(nowComp, 4);
@@ -1135,7 +1137,7 @@ public class MatchStick implements Drawable {
                         System.out.println(" In radius assign, ERROR: rMax < rMin");
 
                      // select a value btw rMin and rMax
-                 nowRad = stickMath_lib.randDouble( rMin, rMax);
+                 nowRad = StickMathLib.randDouble( rMin, rMax);
                      // assign the value to each component
              JuncPt[i].rad = nowRad;
 
@@ -1200,7 +1202,7 @@ public class MatchStick implements Drawable {
             rMax = Math.min( comp[nowComp].mAxisInfo.arcLen / 3.0, 0.5 * comp[nowComp].mAxisInfo.rad);
 
             // select a value btw rMin and rMax
-            nowRad = stickMath_lib.randDouble( rMin, rMax);
+            nowRad = StickMathLib.randDouble( rMin, rMax);
 
             endPt[i].rad = nowRad;
 
@@ -1228,7 +1230,7 @@ public class MatchStick implements Drawable {
 
                 rMin = comp[i].mAxisInfo.arcLen / 10.0;
                 rMax = Math.min(comp[i].mAxisInfo.arcLen / 3.0, 0.5 * comp[i].mAxisInfo.rad);
-                nowRad = stickMath_lib.randDouble( rMin, rMax);
+                nowRad = StickMathLib.randDouble( rMin, rMax);
                 comp[i].radInfo[1][0] = u_value;
                 comp[i].radInfo[1][1] = nowRad;
                 }
@@ -1458,7 +1460,7 @@ public class MatchStick implements Drawable {
             trialCount = 1;
             while (true)
             {
-                    nowPtNdx = stickMath_lib.randInt(1, this.nEndPt);
+                    nowPtNdx = StickMathLib.randInt(1, this.nEndPt);
                 if (endPt[nowPtNdx].rad > 0.2)
                     break; // we find a good endPt
                 trialCount++;
@@ -1473,13 +1475,13 @@ public class MatchStick implements Drawable {
             trialCount = 1;
             while (true)
             {
-                finalTangent = stickMath_lib.randomUnitVec();
+                finalTangent = StickMathLib.randomUnitVec();
                 if ( oriTangent.angle(finalTangent) > TangentSaveZone ) // angle btw the two tangent vector
                     break;
                 if ( trialCount++ == 300)
                     return false;
             }
-            double devAngle = stickMath_lib.randDouble(0.0, 2 * Math.PI);
+            double devAngle = StickMathLib.randDouble(0.0, 2 * Math.PI);
             nowArc.transRotMAxis(alignedPt, finalPos, alignedPt, finalTangent, devAngle);
 
 
@@ -1512,7 +1514,7 @@ public class MatchStick implements Drawable {
                 System.out.println("ERROR, should not choose type 2 addition when nJuncPt = 0");
                 return false;
             }
-            int nowPtNdx = stickMath_lib.randInt(1, this.nJuncPt);
+            int nowPtNdx = StickMathLib.randInt(1, this.nJuncPt);
             //2. transRot the newComp
             int alignedPt = 1;
             Point3d finalPos = new Point3d(JuncPt[nowPtNdx].pos);
@@ -1520,7 +1522,7 @@ public class MatchStick implements Drawable {
             trialCount = 1;
             while (true)
             {
-                finalTangent = stickMath_lib.randomUnitVec();
+                finalTangent = StickMathLib.randomUnitVec();
                 boolean flag = true;
                 for (i=1; i<= JuncPt[nowPtNdx].nTangent; i++)
                 {
@@ -1532,7 +1534,7 @@ public class MatchStick implements Drawable {
                 if ( trialCount++ == 300)
                     return false;
             }
-            double devAngle = stickMath_lib.randDouble(0.0, 2 * Math.PI);
+            double devAngle = StickMathLib.randDouble(0.0, 2 * Math.PI);
             nowArc.transRotMAxis(alignedPt, finalPos, alignedPt, finalTangent, devAngle);
 
 
@@ -1557,7 +1559,7 @@ public class MatchStick implements Drawable {
             int pickedComp;
             while(true)
             {
-                pickedComp = stickMath_lib.randInt(1, nowComp-1); // one of the existing component
+                pickedComp = StickMathLib.randInt(1, nowComp-1); // one of the existing component
                 if ( comp[pickedComp].branchUsed == false)
                     break;
                 if (showDebug)
@@ -1576,14 +1578,14 @@ public class MatchStick implements Drawable {
             trialCount = 1;
             while(true)
             {
-                finalTangent = stickMath_lib.randomUnitVec();
+                finalTangent = StickMathLib.randomUnitVec();
                 if ( finalTangent.angle(oriTangent1) > TangentSaveZone &&
                      finalTangent.angle(oriTangent2) > TangentSaveZone    )
                     break;
                 if ( trialCount++ == 300)
                     return false;
             }
-            double devAngle = stickMath_lib.randDouble(0.0, 2 * Math.PI);
+            double devAngle = StickMathLib.randDouble(0.0, 2 * Math.PI);
             nowArc.transRotMAxis(alignedPt, finalPos, alignedPt, finalTangent, devAngle);
              // 2.5 check if newComp valid
              // 3. update the JuncPt & endPt info
@@ -1619,7 +1621,7 @@ public class MatchStick implements Drawable {
             trialCount = 1;
             while (true)
             {
-                    nowPtNdx = stickMath_lib.randInt(1, this.nEndPt);
+                    nowPtNdx = StickMathLib.randInt(1, this.nEndPt);
                 if (endPt[nowPtNdx].rad > 0.2)
                     break; // we find a good endPt
                 trialCount++;
@@ -1636,7 +1638,7 @@ public class MatchStick implements Drawable {
             trialCount = 1;
             while(true)
             {
-                finalTangent = stickMath_lib.randomUnitVec();
+                finalTangent = StickMathLib.randomUnitVec();
 
                 rev_tangent.negate(finalTangent);
                 if ( oriTangent.angle(finalTangent) > TangentSaveZone &&
@@ -1645,7 +1647,7 @@ public class MatchStick implements Drawable {
                 if ( trialCount++ == 300)
                     return false;
             }
-            double devAngle = stickMath_lib.randDouble(0.0, 2 * Math.PI);
+            double devAngle = StickMathLib.randDouble(0.0, 2 * Math.PI);
             nowArc.transRotMAxis(alignedPt, finalPos, alignedPt, finalTangent, devAngle);
             // 2.5 check Nearby Situtation
             // 3. update JuncPt & endPt info
@@ -1686,9 +1688,9 @@ public class MatchStick implements Drawable {
     {
         Point3d finalPos = new Point3d(0,0,0); //always put at origin;
         Vector3d finalTangent = new Vector3d(0,0,0);
-        finalTangent = stickMath_lib.randomUnitVec();
+        finalTangent = StickMathLib.randomUnitVec();
        // System.out.println("random final tangent is : " + finalTangent);
-        double devAngle = stickMath_lib.randDouble(0.0, Math.PI * 2);
+        double devAngle = StickMathLib.randDouble(0.0, Math.PI * 2);
         int alignedPt = 26; // make it always the center of the mAxis curve
         MAxisArc nowArc = new MAxisArc();
         nowArc.genArcRand();
@@ -1751,14 +1753,14 @@ public class MatchStick implements Drawable {
             boolean noChgFlg = true;
             for (i=1; i<=nComponent; i++) {
                 if (  LeafBranch[i] == true)
-                    task4Tube[i] = stickMath_lib.pickFromProbDist( prob_leaf);
+                    task4Tube[i] = StickMathLib.pickFromProbDist( prob_leaf);
                 else
-                    task4Tube[i] = stickMath_lib.pickFromProbDist( prob_center);
+                    task4Tube[i] = StickMathLib.pickFromProbDist( prob_center);
 
                 if (task4Tube[i] != 1)
                 	noChgFlg = false; // at least one chg will occur
             }
-                nAddTube = stickMath_lib.pickFromProbDist( prob_addNewTube) - 1;
+                nAddTube = StickMathLib.pickFromProbDist( prob_addNewTube) - 1;
             nRemoveTube =0;
             for (i=1; i<=nComponent; i++)
                 if (task4Tube[i] == 4)
@@ -1789,7 +1791,7 @@ public class MatchStick implements Drawable {
             for (i=1; i<=nComponent; i++)
                 task4Tube[i] = 1;
             while (true) {
-                i =stickMath_lib.randInt(1, nComponent);
+                i =StickMathLib.randInt(1, nComponent);
                 if (LeafBranch[i] == true) {
                     task4Tube[i] = 4;
                     break;
@@ -1807,14 +1809,14 @@ public class MatchStick implements Drawable {
             nAddTube = 0;
             for (i=1; i<=nComponent; i++)
                 task4Tube[i] = 1;
-            int randComp  = stickMath_lib.randInt(1, nComponent);
+            int randComp  = StickMathLib.randInt(1, nComponent);
             task4Tube[randComp] = 2;
         } else if ( debugParam == 4) {
             nRemoveTube = 0;
             nAddTube = 0;
             for (i=1; i<=nComponent; i++)
                 task4Tube[i] = 1;
-            int randComp  =stickMath_lib.randInt(1, nComponent);
+            int randComp  =StickMathLib.randInt(1, nComponent);
             task4Tube[randComp] = 3;
         }
 
@@ -1927,15 +1929,15 @@ public class MatchStick implements Drawable {
         // if ChangeRotationVolatileRate = 0.1, --> 90% chance no change
 
         //volatileRate = 10.0; // means always do final rot change
-        if ( stickMath_lib.rand01() >= volatileRate)
+        if ( StickMathLib.rand01() >= volatileRate)
             return true;
 
         while (true)
         {
             sum_deg = 0.0;
-            degX = stickMath_lib.randDouble(-30.0, 30.0);
-            degY = stickMath_lib.randDouble(-30.0, 30.0);
-            degZ = stickMath_lib.randDouble(-30.0, 30.0);
+            degX = StickMathLib.randDouble(-30.0, 30.0);
+            degY = StickMathLib.randDouble(-30.0, 30.0);
+            degZ = StickMathLib.randDouble(-30.0, 30.0);
             sum_deg = Math.abs(degX) + Math.abs(degY) + Math.abs(degZ);
             if (sum_deg >=30 && sum_deg <=60 )
                 break;
@@ -2171,8 +2173,8 @@ public class MatchStick implements Drawable {
              if ( JuncPt[i].rad > rMax || JuncPt[i].rad < rMin)
             {
                 haveChg = true; // definitely need to chg
-                if (stickMath_lib.rand01() < rad_Volatile)
-                    nowRad = stickMath_lib.randDouble( rMin, rMax);
+                if (StickMathLib.rand01() < rad_Volatile)
+                    nowRad = StickMathLib.randDouble( rMin, rMax);
                 else // we don't want huge chg
                 {
                     if ( JuncPt[i].rad > rMax)  nowRad = rMax;
@@ -2181,12 +2183,12 @@ public class MatchStick implements Drawable {
             }
             else // the original value is in legal range
             {
-                if (stickMath_lib.rand01() < rad_Volatile)
+                if (StickMathLib.rand01() < rad_Volatile)
                 {
                     haveChg = true;
                     while(true)
                     {
-                        nowRad = stickMath_lib.randDouble( rMin, rMax);
+                        nowRad = StickMathLib.randDouble( rMin, rMax);
                         double dist = Math.abs( nowRad - JuncPt[i].rad);
                         double range = rMax - rMin;
                         if ( dist >= 0.2 * range) break; // not very near the original value
@@ -2377,15 +2379,15 @@ public class MatchStick implements Drawable {
                 // select a value btw rMin and rMax
             double range = rMax - rMin;
             if ( oriRad < 0.0)
-                nowRad = stickMath_lib.randDouble( rMin, rMax);
+                nowRad = StickMathLib.randDouble( rMin, rMax);
             else // in the case where we have old value
             {
-                if (stickMath_lib.rand01() < volatileRate)
+                if (StickMathLib.rand01() < volatileRate)
                 {
                       // gen a new similar value
                       while (true)
                       {
-                      nowRad = stickMath_lib.randDouble( rMin, rMax);
+                      nowRad = StickMathLib.randDouble( rMin, rMax);
                       if ( oriRad > rMax || oriRad < rMin)
                             break;
                       if ( Math.abs(nowRad - oriRad) >= 0.2* range && Math.abs(nowRad - oriRad) <= 0.4* range)
@@ -2433,18 +2435,18 @@ public class MatchStick implements Drawable {
                 double oriRad = oriValue[1][1]; // the middle radius value
                 double range = rMax - rMin;
                 if ( oriRad < 0.0)
-                    nowRad = stickMath_lib.randDouble( rMin, rMax);
+                    nowRad = StickMathLib.randDouble( rMin, rMax);
                 else // in the case where we have old value
                 {
 
-                    if (stickMath_lib.rand01() < volatileRate)
+                    if (StickMathLib.rand01() < volatileRate)
                     {
                         if ( showDebug)
                             System.out.println("gen similar in range" + rMin + " ~ " + rMax);
                           // gen a new similar value
                           while (true)
                           {
-                          nowRad = stickMath_lib.randDouble( rMin, rMax);
+                          nowRad = StickMathLib.randDouble( rMin, rMax);
                         if ( oriRad > rMax || oriRad < rMin)
                             break;
                         if ( Math.abs(nowRad - oriRad) >= 0.2* range && Math.abs(nowRad - oriRad) <= 0.4* range)
@@ -2506,13 +2508,13 @@ public class MatchStick implements Drawable {
         else if ( nHingePt == 2)
         {
             double[] prob = { 0.5, 1.0};
-            int Ndx = stickMath_lib.pickFromProbDist( prob);
+            int Ndx = StickMathLib.pickFromProbDist( prob);
             alignedPt = HingePtNdx[Ndx];
         }
         else if ( nHingePt == 3)
         {
             double[] prob = { 0.3333, 0.6666, 1.0};
-            int Ndx = stickMath_lib.pickFromProbDist( prob);
+            int Ndx = StickMathLib.pickFromProbDist( prob);
             alignedPt = HingePtNdx[Ndx];
         }
         return alignedPt;
@@ -2575,8 +2577,8 @@ public class MatchStick implements Drawable {
                 nowArc = new MAxisArc();
                 nowArc.genArcRand();
                 Vector3d finalTangent = new Vector3d();
-                finalTangent = stickMath_lib.randomUnitVec();
-                double devAngle = stickMath_lib.randDouble(0, Math.PI * 2);
+                finalTangent = StickMathLib.randomUnitVec();
+                double devAngle = StickMathLib.randDouble(0, Math.PI * 2);
                 nowArc.transRotMAxis(alignedPt, alignedPos, alignedPt, finalTangent, devAngle);
                 boolean tangentFlg = true;
                 Vector3d nowTangent = new Vector3d();
@@ -3030,17 +3032,17 @@ public class MatchStick implements Drawable {
         {
             if ( showDebug)
               System.out.println("TRY adding new MAxis on, now # " +  nowComp);
-            randNdx = stickMath_lib.rand01();
+            randNdx = StickMathLib.rand01();
             if (randNdx < PROB_addToEndorJunc)
             {
-                if (nJuncPt == 0 || stickMath_lib.rand01() < PROB_addToEnd_notJunc)
+                if (nJuncPt == 0 || StickMathLib.rand01() < PROB_addToEnd_notJunc)
                     addSuccess = this.Add_MStick(nowComp, 1);
                 else
                     addSuccess = this.Add_MStick(nowComp, 2);
             }
             else
             {
-                if (stickMath_lib.rand01() < PROB_addTiptoBranch)
+                if (StickMathLib.rand01() < PROB_addTiptoBranch)
                     addSuccess = this.Add_MStick(nowComp, 3);
                 else
                     addSuccess = this.Add_MStick(nowComp, 4);
@@ -3711,7 +3713,7 @@ public class MatchStick implements Drawable {
 
                     rMin = comp[i].mAxisInfo.arcLen / 10.0;
                     rMax = Math.min(comp[i].mAxisInfo.arcLen / 3.0, 0.5 * comp[i].mAxisInfo.rad);
-                    nowRad = stickMath_lib.randDouble( rMin, rMax);
+                    nowRad = StickMathLib.randDouble( rMin, rMax);
                     nowRad = 0.5* (comp[i].radInfo[0][1] + comp[i].radInfo[2][1] );
                     comp[i].radInfo[1][0] = u_value;
                     comp[i].radInfo[1][1] = nowRad;
@@ -3875,7 +3877,7 @@ public class MatchStick implements Drawable {
 
                     rMin = comp[i].mAxisInfo.arcLen / 10.0;
                     rMax = Math.min(comp[i].mAxisInfo.arcLen / 3.0, 0.5 * comp[i].mAxisInfo.rad);
-                    nowRad = stickMath_lib.randDouble( rMin, rMax);
+                    nowRad = StickMathLib.randDouble( rMin, rMax);
                     nowRad = 0.5* (comp[i].radInfo[0][1] + comp[i].radInfo[2][1] );
                     comp[i].radInfo[1][0] = u_value;
                     comp[i].radInfo[1][1] = nowRad;
@@ -4056,42 +4058,51 @@ public class MatchStick implements Drawable {
     	int minX  = stimBox[0], minY  = stimBox[1];
     	int nPixX = stimBox[2], nPixY = stimBox[3];
 
-    	// read from frame buffer
+    	int[] colors = new int[]{GL11.GL_RED,GL11.GL_GREEN,GL11.GL_BLUE};
+    	
+    	 // generate random matrix
+    	double[][] randPixels = genRandMatrix(nPixX,nPixY*2);
+    	
+    	List<double[][]> finalMatrix = new ArrayList<double[][]>();
+    	
     	GL11.glPixelStorei(GL11.GL_PACK_ALIGNMENT, 1);
-        ByteBuffer redPixels = ByteBuffer.allocateDirect(nPixX*nPixY);
-        GL11.glReadPixels(minX,minY, nPixX, nPixY, GL11.GL_RED, GL11.GL_UNSIGNED_BYTE, redPixels);
-
-        // convert to matrix
-        double[][] orig_pixels = byteBufferToComplexMatrix(redPixels,nPixX,nPixY);
-        double[][] pixels = normalizeBackground(orig_pixels,nPixX,nPixY);
-
-        // generate random matrix
-        double[][] randPixels = genRandMatrix(nPixX,nPixY*2);
-
-        // do fft of image
-		DoubleFFT_2D fftOfShape = new DoubleFFT_2D(nPixX,nPixY);
-		fftOfShape.complexForward(pixels);
-		ComplexMatrix shapeMatrix = new ComplexMatrix(nPixX,nPixY,pixels);
-
-        // do fft of random image
-        DoubleFFT_2D fftOfRand = new DoubleFFT_2D(nPixX,nPixY);
-        fftOfRand.complexForward(randPixels);
-        ComplexMatrix randMatrix = new ComplexMatrix(nPixX,nPixY,randPixels);
-
-        // add random phase to image phase
-        shapeMatrix.addPhase(randMatrix.getPhase());
-
-        // do ifft with scrambled phase
-        double[][] matrixForIfft = shapeMatrix.getRealImag();
-        DoubleFFT_2D inv_fftOfShape = new DoubleFFT_2D(nPixX,nPixY);
-        inv_fftOfShape.complexInverse(matrixForIfft,true);
+    	
+    	for (int i=0; i<3; i++) {
+        	// read from frame buffer
+    		ByteBuffer redPixels = ByteBuffer.allocateDirect(nPixX*nPixY);
+	        GL11.glReadPixels(minX,minY, nPixX, nPixY, colors[i], GL11.GL_UNSIGNED_BYTE, redPixels);
+	
+	        // convert to matrix
+	        double[][] orig_pixels = byteBufferToComplexMatrix(redPixels,nPixX,nPixY);
+	        double[][] pixels = normalizeBackground(orig_pixels,nPixX,nPixY);
+	
+	        // do fft of image
+			DoubleFFT_2D fftOfShape = new DoubleFFT_2D(nPixX,nPixY);
+			fftOfShape.complexForward(pixels);
+			ComplexMatrix shapeMatrix = new ComplexMatrix(nPixX,nPixY,pixels);
+	
+	        // do fft of random image
+	        DoubleFFT_2D fftOfRand = new DoubleFFT_2D(nPixX,nPixY);
+	        fftOfRand.complexForward(randPixels);
+	        ComplexMatrix randMatrix = new ComplexMatrix(nPixX,nPixY,randPixels);
+	
+	        // add random phase to image phase
+	        shapeMatrix.addPhase(randMatrix.getPhase());
+	
+	        // do ifft with scrambled phase
+	        double[][] matrixForIfft = shapeMatrix.getRealImag();
+	        DoubleFFT_2D inv_fftOfShape = new DoubleFFT_2D(nPixX,nPixY);
+	        inv_fftOfShape.complexInverse(matrixForIfft,true);
+	        
+	        finalMatrix.add(matrixForIfft);
+    	}
 
         // get pixels to write to frame buffer
         ByteBuffer allPixels = ByteBuffer.allocateDirect(nPixX*nPixY*4);
         GL11.glReadPixels(minX,minY, nPixX, nPixY, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, allPixels);
 
         // get byte buffer to write
-        ByteBuffer pixelsToWrite = getByteBufferToWrite(matrixForIfft,allPixels,nPixX,nPixY);
+        ByteBuffer pixelsToWrite = getByteBufferToWrite(finalMatrix,allPixels,nPixX,nPixY);
 
         // write byte buffer to framebuffer
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_STENCIL_BUFFER_BIT);
@@ -4100,7 +4111,7 @@ public class MatchStick implements Drawable {
         GL11.glDrawPixels(nPixX, nPixY, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, pixelsToWrite);
     }
 
-    private ByteBuffer getByteBufferToWrite(double[][] complexMatrixToWrite, ByteBuffer allPixels, int nx, int ny) {
+    private ByteBuffer getByteBufferToWrite(List<double[][]> complexMatrixToWrite, ByteBuffer allPixels, int nx, int ny) {
     	ByteBuffer modifiedPixels = ByteBuffer.allocateDirect(nx*ny*4);
     	allPixels.rewind();
 
@@ -4112,10 +4123,12 @@ public class MatchStick implements Drawable {
 		        int  a = allPixels.get() & 0xff;
 
 		        if (a > 0) {
-		        	int col = (int)(complexMatrixToWrite[j][2*i]);
-		        	modifiedPixels.put((byte)col);
-		        	modifiedPixels.put((byte)col);
-		        	modifiedPixels.put((byte)col);
+		        	int red = (int)(complexMatrixToWrite.get(0)[j][2*i]);
+		        	int green = (int)(complexMatrixToWrite.get(1)[j][2*i]);
+		        	int blue = (int)(complexMatrixToWrite.get(2)[j][2*i]);
+		        	modifiedPixels.put((byte)red);
+		        	modifiedPixels.put((byte)green);
+		        	modifiedPixels.put((byte)blue);
 		        	modifiedPixels.put((byte)0);
 		        } else {
 		        	modifiedPixels.put(r);
