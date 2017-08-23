@@ -129,14 +129,46 @@ public class MatchStick implements Drawable {
         MStickSpec inSpec = new MStickSpec();
         inSpec = MStickSpec.fromXml(in_specStr);
         
-        genMatchStickFromShapeSpec(inSpec);
+        genMatchStickFromShapeSpec(inSpec, new double[] {0,0,0});
+    }
+    
+    public void genMatchStickFromFile(String fname, double[] rotation) {
+    	String in_specStr;
+        StringBuffer fileData = new StringBuffer(100000);
+        try
+        {
+            BufferedReader reader = new BufferedReader(
+                new FileReader(fname));
+            char[] buf = new char[1024];
+            int numRead=0;
+            while((numRead=reader.read(buf)) != -1){
+                String readData = String.valueOf(buf, 0, numRead);
+                //System.out.println(readData);
+                fileData.append(readData);
+                buf = new char[1024];
+
+            }
+            reader.close();
+        }
+        catch (Exception e)
+        {
+            System.out.println("error in read XML spec file");
+            System.out.println(e);
+        }
+
+        in_specStr = fileData.toString();
+        
+        MStickSpec inSpec = new MStickSpec();
+        inSpec = MStickSpec.fromXml(in_specStr);
+        
+        genMatchStickFromShapeSpec(inSpec, rotation);
     }
     
     /**
      *    genMatchStickFrom spec data
      *    Read in a spec structure, and dump those info into this MAxis structure
      */
-    public void genMatchStickFromShapeSpec( MStickSpec inSpec)
+    public void genMatchStickFromShapeSpec( MStickSpec inSpec, double[] rotation)
     {
         // i can't see how inSpec is changed by this function
         //but it seems to be the case........
@@ -239,7 +271,7 @@ public class MatchStick implements Drawable {
         // 5. final rotation info
         this.finalRotation = new double[3];
         for (i=0; i<3; i++)
-            this.finalRotation[i] = inSpec.mAxis.finalRotation[i];
+            this.finalRotation[i] = inSpec.mAxis.finalRotation[i] + rotation[i];
 
         // 6. calculate the smooth vect and fac info
 
@@ -662,7 +694,7 @@ public class MatchStick implements Drawable {
                 inSpec.mAxis.finalRotation[i] = 0.0;
         }
 
-        this.genMatchStickFromShapeSpec(inSpec);
+        this.genMatchStickFromShapeSpec(inSpec, new double[] {0,0,0});
 
         //do the finalRotateHere, or already did in fromShapeSpec
         //this.finalRotateAllPoints( finalRotation[0], finalRotation[1], finalRotation[2]);
