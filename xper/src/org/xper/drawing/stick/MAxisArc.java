@@ -219,10 +219,10 @@ public class MAxisArc
      /**
 	generate a new MAxis Arc, with radius and arcLen randomly chosen
      */
-     public void genArcRand()
+     public void genArcRand(double degWidth, double screenDist, double lengthFactor)
      {
     	 // randomly determine the rad and arcLen, and then call genArc
-    	 double RadView = 5.0;
+    	 double RadView = 2;
     	 // high curvature 0.2 ~ 0.6 R
          // medium curvature 0.6 ~ 6 R
          // no curvautre, let k = 0.000001;
@@ -251,11 +251,19 @@ public class MAxisArc
 	//k = 1 / rad;
 
         // 2. choose the length
-  	double length_lb = 1.5; //the lower bound of length
+  	double length_lb = 0.5; //the lower bound of length
   	double length_ub = Math.min( Math.PI * rad, RadView);
         //pick a value btw length_lb & length_ub
   	double arcLen = rand.nextDouble() * (length_ub - length_lb) + length_lb;
 
+//    double pixWidth = 1920*screenDist*Math.tan(Math.toRadians(degWidth))/54.6;
+//    
+//  	rad = (pixWidth-1)*lengthFactor/100; // RAMUST
+//  	arcLen = Math.PI*rad; // RAMUST
+  	
+//  	rad = 10000; // RAMUST
+//  	arcLen = 2; // RAMUST
+  	
 // 	System.out.println("rad is : " + rad);	
 // 	System.out.println("arcLen is : " + arcLen);
 
@@ -409,7 +417,7 @@ public class MAxisArc
    		if (Angle == 0.0) // remove the Angle == Math.PI on July24 2009
 	   {
       	        skipRotate = true;
-    		System.out.println("Skip second rotation");
+//    		System.out.println("Skip second rotation");
        }
    		if (Angle == Math.PI)
    		{
@@ -461,6 +469,7 @@ public class MAxisArc
 	   {
 		mPts[i].add(transVec);
 	   }
+	   
         /// 5. save the transrot history into recording data
 	   transRotHis_alignedPt = alignedPt;
 	   transRotHis_rotCenter = rotCenter;

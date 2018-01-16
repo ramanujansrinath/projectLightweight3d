@@ -19,10 +19,10 @@ public class MorphStimuli {
 		objs.add(new MatchStick());
 		System.out.println("Fetching stim spec for " + id);
 		objs.get(0).genMatchStickFromFile(folderPath + "/" + args[1] + "_spec.xml");
-		objs.get(0).mutate(0);
+//		objs.get(0).mutate(0);
 		objs.get(0).setTextureType(args[3]);
 		objs.get(0).setDoClouds(Boolean.parseBoolean(args[4]));
-		objs.get(0).setStimColor(new RGBColor(1,0,0));
+		objs.get(0).setStimColor(new RGBColor(1,1,1));
 
 		Long id_new = Long.parseLong(args[2]);
 		ids.add(id_new);
@@ -36,6 +36,6 @@ public class MorphStimuli {
 		PNGmaker pngMaker = new PNGmaker();
 		pngMaker.setSaveToFile(true);
 		pngMaker.setImageFolderName(folderPath);
-		pngMaker.createAndSavePNGsfromObjs(objs, ids);
+//		pngMaker.createAndSavePNGsfromObjs(objs, ids);
 	}
 }

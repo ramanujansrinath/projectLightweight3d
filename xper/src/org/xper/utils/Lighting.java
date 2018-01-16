@@ -1,7 +1,7 @@
 package org.xper.utils;
 
 public class Lighting {
-	RGBColor color = new RGBColor(1f,0f,0f);
+	RGBColor color = new RGBColor(1f,1f,1f);
 	Material material = Material.SPECULAR;
 	
 	public enum Material {

@@ -13,7 +13,7 @@ public class DbUtil {
 	public DbUtil() {
 		try {
 			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager.getConnection("jdbc:mysql://172.30.6.27:3306/ram_170105_3dma?autoReconnect=true&useSSL=false", "xper_rw", "up2nite");
+			conn = DriverManager.getConnection("jdbc:mysql://172.30.6.27:3306/ram_170620_3dma?autoReconnect=true&useSSL=false", "xper_rw", "up2nite");
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
@@ -199,23 +199,23 @@ public class DbUtil {
 		}
 	}
 	
-	public void writeThumbnail(Long id, byte[] thumbnail) {
-		try {
-			String query = "if exists (select id from thumbnail where id = ?) "
-							+ "update thumbnail set data = ? where id = ? "
-							+ "else "
-							+ "insert into thumbnail values(?,?) ";
-			PreparedStatement stmt = conn.prepareStatement(query);
-			stmt.setLong(1, id);
-			stmt.setBytes(2, thumbnail);
-			stmt.setLong(3, id);
-			stmt.setLong(4, id);
-			stmt.setBytes(5, thumbnail);
-			stmt.executeUpdate();
-			stmt.close();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
+	public void writeThumbnail(Double id, byte[] thumbnail) {
+//		try {
+//			String query = "if exists (select id from thumbnail where id = ?) "
+//							+ "update thumbnail set data = ? where id = ? "
+//							+ "else "
+//							+ "insert into thumbnail values(?,?) ";
+//			PreparedStatement stmt = conn.prepareStatement(query);
+//			stmt.setLong(1, id);
+//			stmt.setBytes(2, thumbnail);
+//			stmt.setLong(3, id);
+//			stmt.setLong(4, id);
+//			stmt.setBytes(5, thumbnail);
+//			stmt.executeUpdate();
+//			stmt.close();
+//		} catch (SQLException e) {
+//			e.printStackTrace();
+//		}
 	}
 
 	public void finalize() {

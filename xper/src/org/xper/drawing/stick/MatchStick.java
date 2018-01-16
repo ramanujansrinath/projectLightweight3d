@@ -17,19 +17,30 @@ import javax.vecmath.Vector3d;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL20;
 import org.lwjgl.util.glu.GLU;
 import org.xper.drawing.drawables.Drawable;
 import org.xper.utils.ComplexMatrix;
+import org.xper.utils.Coordinates2D;
 import org.xper.utils.RGBColor;
 
 import org.xper.utils.Lighting;
 import org.xper.utils.Lighting.Material;
 import org.jtransforms.fft.DoubleFFT_2D;
 
-public class MatchStick implements Drawable {
-    final double scaleForMAxisShape = 40;
+import org.lwjgl.opengl.ARBFragmentShader;
+import org.lwjgl.opengl.ARBShaderObjects;
+import org.lwjgl.opengl.ARBVertexShader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
-    private double[] finalRotation;
+
+public class MatchStick implements Drawable {
+    final double scaleForMAxisShape = 1;
+
+    private double[] finalRotation = new double[]{0,0,0};
+    private double[] finalTranslation;
+    
     private Point3d finalShiftinDepth;
     private int nComponent;
 
@@ -41,24 +52,41 @@ public class MatchStick implements Drawable {
     private MStickObj4Smooth obj1;
     private boolean[] LeafBranch = new boolean[10];
 
-    private final double[] PARAM_nCompDist = {0.0 ,0.4, 0.6, 1.0, 0.0, 0.0, 0.0, 0.0};
+    private final double[] PARAM_nCompDist = {0.0 ,1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
     private final double PROB_addToEndorJunc = 1; 	// 60% add to end or junction pt, 40% to the branch
-    private final double PROB_addToEnd_notJunc = 0; // when "addtoEndorJunc", 50% add to end, 50% add to junc
+    private final double PROB_addToEnd_notJunc = 0.2; // when "addtoEndorJunc", 50% add to end, 50% add to junc
                       								// however, if # of junc Pt == 0, always add to End
     private final double PROB_addTiptoBranch = 0; 	// when "add new component to the branch is true"
     private final double ChangeRotationVolatileRate = 0;
                       								// the prob. of chg the final rot angle after a GA mutate
-    private final double TangentSaveZone = Math.PI / 6.0;
+    private final double TangentSaveZone = Math.PI / 4.0;
 
     private int nowCenterTube;
 
     private String textureType = "SHADE";
 
-	private boolean doClouds;
+	private boolean doClouds = false;
 	private Point3d[] boundingBox;
-	private RGBColor stimColor;
-	float[] light_position = {0.0f, 200.0f, 200.0f, 1.0f};
+	private RGBColor stimColor = new RGBColor(0.6f,0.6f,0.6f);
+	
+	double light_angle = Math.toRadians(90);
+	double light_distance = 200;
+	float[] light_position = new float[]{(float) (light_distance*Math.cos(light_angle)),0, (float) (light_distance*Math.sin(light_angle)),1};
+//	float[] light_position = new float[] {2f,2.6f,0f,1};
+//	float[] light_spotDir = new float[]{-1f,-1f,0f,0};
+//	float light_spotAngle = 20;
+	
+	double degWidth = 1;
+	double screenDist = 100;
+	double lengthFactor = 1;
+	
+	boolean doCenter = false;
+	
+	Occluder occluder;
+	List<Aperture> apertures;
+	float occluderAlpha = 0.95f;
+	int shaderProgram = 0;
 
     public MatchStick() {}
 
@@ -102,6 +130,12 @@ public class MatchStick implements Drawable {
 
         for (i=1; i<=nComponent; i++)
             this.LeafBranch[i] = in.LeafBranch[i];
+        
+        for (i=0; i<3; i++)
+        		this.finalRotation[i] = in.finalRotation[i];
+        
+        for (i=0; i<3; i++)
+    			this.finalTranslation[i] = in.finalTranslation[i];
     }
 
 
@@ -136,12 +170,47 @@ public class MatchStick implements Drawable {
 
         genMatchStickFromShapeSpec(inSpec);
     }
+    
+    public void genMatchStickFromFile_paramChange(String fname,double[] finalRotation) {
+    	String in_specStr;
+        StringBuffer fileData = new StringBuffer(100000);
+        try
+        {
+            BufferedReader reader = new BufferedReader(
+                new FileReader(fname));
+            char[] buf = new char[1024];
+            int numRead=0;
+            while((numRead=reader.read(buf)) != -1){
+                String readData = String.valueOf(buf, 0, numRead);
+                //System.out.println(readData);
+                fileData.append(readData);
+                buf = new char[1024];
+
+            }
+            reader.close();
+        }
+        catch (Exception e)
+        {
+            System.out.println("error in read XML spec file");
+            System.out.println(e);
+        }
+
+        in_specStr = fileData.toString();
+
+        MStickSpec inSpec = new MStickSpec();
+        inSpec = MStickSpec.fromXml(in_specStr);
+        
+        inSpec.mAxis.finalRotation = finalRotation;
+        
+        genMatchStickFromShapeSpec(inSpec);
+        
+    }
 
     /**
      *    genMatchStickFrom spec data
      *    Read in a spec structure, and dump those info into this MAxis structure
      */
-    public void genMatchStickFromShapeSpec( MStickSpec inSpec)
+    public void genMatchStickFromShapeSpec( MStickSpec inSpec )
     {
         // i can't see how inSpec is changed by this function
         //but it seems to be the case........
@@ -245,14 +314,20 @@ public class MatchStick implements Drawable {
         this.finalRotation = new double[3];
         for (i=0; i<3; i++)
             this.finalRotation[i] = inSpec.mAxis.finalRotation[i];
-
+        
+        this.finalTranslation = new double[] {0,0,0};
+        if (inSpec.mAxis.finalTranslation != null)
+        		for (i=0; i<3; i++)
+        			this.finalTranslation[i] = inSpec.mAxis.finalTranslation[i];
         // 6. calculate the smooth vect and fac info
 
-         // 2008, Nov, we should not do a rotation again here, since the original ShapeSpec info should already be rotated
+         // 2008, Nov, we should not do a rotation again here, 
+        // since the original ShapeSpec info should already be rotated
          // again, or we should do it!
         //this.finalRotateAllPoints( finalRotation[0], finalRotation[1], finalRotation[2]);
 
         boolean res = this.smoothizeMStick();
+        
         if ( res == false) // success to smooth
         {
             System.out.println("Fail to smooth while using info from a shapeSpec");
@@ -705,6 +780,7 @@ public class MatchStick implements Drawable {
         //double[] nCompDist = {0, 0.05, 0.15, 0.35, 0.65, 0.85, 0.95, 1.00};
         double[] nCompDist = this.PARAM_nCompDist;
         nComp = StickMathLib.pickFromProbDist(nCompDist);
+//        nComp = 5; // RAMUST
 
         this.cleanData();
         //  debug
@@ -723,15 +799,13 @@ public class MatchStick implements Drawable {
 //                System.out.println("        Attempt to gen shape fail. try again");
           }
 
-          this.finalRotation = new double[3];
-          for (int i=0; i<3; i++)
-              finalRotation[i] = StickMathLib.randDouble(0, 360.0);
-
-          //debug
-
-          //finalRotation[0] = 90.0;
-          //finalRotation[1] = 0.0;
-          //finalRotation[2] = 0;
+          this.finalRotation = new double[]{-90,90,0};
+//          for (int i=0; i<3; i++)
+//              finalRotation[i] = StickMathLib.randDouble(0, 360.0);
+          // RAMUST
+          
+          centerShapeAtOrigin(1);
+          
 
           //this.finalRotateAllPoints(finalRotation[0], finalRotation[1], finalRotation[2]);
 
@@ -742,9 +816,10 @@ public class MatchStick implements Drawable {
 //              System.out.println("      Fail to smooth combine the shape. try again.");
 
 
-
+          
 
        }
+       
 
      }
 
@@ -768,11 +843,13 @@ public class MatchStick implements Drawable {
     			comp[i].drawSurfPt(colorCode[i-1],scaleForMAxisShape);
             }
         else {
-        	if (Material.valueOf(textureType) == Material.TWOD) 
-        		obj1.setDoLighting(false);
-        	obj1.setStimColor(stimColor);
-        	obj1.drawVect();
-        	boundingBox = obj1.getBoundingBox();
+	        	if (Material.valueOf(textureType) == Material.TWOD) 
+	        		obj1.setDoLighting(false);
+	        	obj1.setStimColor(stimColor);
+	        	boundingBox = obj1.getBoundingBox();
+	        	obj1.drawVect();
+//	        	obj1.drawVectGrat(degWidth);
+//	        	boundingBox = obj1.getBoundingBox();
         }
     }
     
@@ -791,6 +868,7 @@ public class MatchStick implements Drawable {
             System.out.println("Generate new random mStick, with " + nComp + " components");
         int i;
         this.nComponent= nComp;
+        
         //comp = new TubeComp[nComp+1];
 
             for (i=1; i<=nComp; i++)
@@ -802,7 +880,7 @@ public class MatchStick implements Drawable {
         int nowComp = 2;
         double randNdx;
         boolean addSuccess;
-            while (true)
+            while (nComp > 1)
         {
             if ( showDebug)
                 System.out.println("adding new MAxis on, now # " +  nowComp);
@@ -810,7 +888,7 @@ public class MatchStick implements Drawable {
             if (randNdx < PROB_addToEndorJunc)
             {
                 if (nJuncPt == 0 || StickMathLib.rand01() < PROB_addToEnd_notJunc)
-                    addSuccess = this.Add_MStick(nowComp, 1);
+                	addSuccess = this.Add_MStick(nowComp, 1);
                 else
                     addSuccess = this.Add_MStick(nowComp, 2);
             }
@@ -829,7 +907,9 @@ public class MatchStick implements Drawable {
 
         //up to here, the eligible skeleton should be ready
         // 3. Assign the radius value
-        this.RadiusAssign( 0); // no component to preserve radius
+        double pixWidth = 1920*screenDist*Math.tan(Math.toRadians(degWidth))/54.6;
+            
+        this.RadiusAssign( 0, (pixWidth-1)/100); // no component to preserve radius //RAMUST
         // 4. Apply the radius value onto each component
         for (i=1; i<=nComponent; i++)
         {
@@ -853,7 +933,7 @@ public class MatchStick implements Drawable {
 
         // Dec 24th 2008
         // re-center the shape before do the validMStickSize check!
-        this.centerShapeAtOrigin(-1);
+//        this.centerShapeAtOrigin(-1);
         // this.normalizeMStickSize();
 
 //   System.out.println("after centering");
@@ -876,7 +956,7 @@ public class MatchStick implements Drawable {
     private boolean validMStickSize()
     {
     	double maxRad = 50; // degree
-    	double screenDist = 616;
+    	double screenDist = 525;
 
     	double radSize = screenDist * Math.tan(maxRad*Math.PI/180) / 2;
 
@@ -1108,7 +1188,7 @@ public class MatchStick implements Drawable {
         Assign the radius value to the Match Stick.
         The radius value will be randomly chosen in reasonable range
         */
-    private void RadiusAssign(int nPreserve)
+    public void RadiusAssign(int nPreserve, double someVal)
     {
         double rMin, rMax;
         double nowRad, u_value, tempX;
@@ -1138,6 +1218,7 @@ public class MatchStick implements Drawable {
 
                      // select a value btw rMin and rMax
                  nowRad = StickMathLib.randDouble( rMin, rMax);
+//                 nowRad = someVal; //RAMUST
                      // assign the value to each component
              JuncPt[i].rad = nowRad;
 
@@ -1203,7 +1284,7 @@ public class MatchStick implements Drawable {
 
             // select a value btw rMin and rMax
             nowRad = StickMathLib.randDouble( rMin, rMax);
-
+//            nowRad = someVal; //RAMUST
             endPt[i].rad = nowRad;
 
             if ( Math.abs( u_value - 0.0) < 0.0001)
@@ -1231,6 +1312,7 @@ public class MatchStick implements Drawable {
                 rMin = comp[i].mAxisInfo.arcLen / 10.0;
                 rMax = Math.min(comp[i].mAxisInfo.arcLen / 3.0, 0.5 * comp[i].mAxisInfo.rad);
                 nowRad = StickMathLib.randDouble( rMin, rMax);
+//                nowRad = someVal; //RAMUST
                 comp[i].radInfo[1][0] = u_value;
                 comp[i].radInfo[1][1] = nowRad;
                 }
@@ -1443,7 +1525,7 @@ public class MatchStick implements Drawable {
         }
         // random get a new MAxisArc
         MAxisArc nowArc = new MAxisArc();
-        nowArc.genArcRand();
+        nowArc.genArcRand(degWidth, screenDist, lengthFactor);
 
 
 
@@ -1475,7 +1557,17 @@ public class MatchStick implements Drawable {
             trialCount = 1;
             while (true)
             {
-                finalTangent = StickMathLib.randomUnitVec();
+                 finalTangent = StickMathLib.randomUnitVec(); // RAMUST
+//                if (nowComp == 2) // RAMUST
+//                	finalTangent = new Vector3d(0,-1/Math.sqrt(2),1/Math.sqrt(2)); // RAMUST
+//                else if (nowComp == 3) // RAMUST
+//                	finalTangent = new Vector3d(-1,0,0); // RAMUST
+//                else if (nowComp == 4) // RAMUST
+//                	finalTangent = new Vector3d(0,0,1); // RAMUST
+//                else if (nowComp == 5) // RAMUST
+//                	finalTangent = new Vector3d(1,0,0); // RAMUST
+                
+                
                 if ( oriTangent.angle(finalTangent) > TangentSaveZone ) // angle btw the two tangent vector
                     break;
                 if ( trialCount++ == 300)
@@ -1522,7 +1614,13 @@ public class MatchStick implements Drawable {
             trialCount = 1;
             while (true)
             {
-                finalTangent = StickMathLib.randomUnitVec();
+                 finalTangent = StickMathLib.randomUnitVec();
+                
+//                if (nowComp == 2) // RAMUST
+//                	finalTangent = new Vector3d(1,0,0); // RAMUST
+//                else // RAMUST
+//                	finalTangent = new Vector3d(-1,0,0); // RAMUST
+                
                 boolean flag = true;
                 for (i=1; i<= JuncPt[nowPtNdx].nTangent; i++)
                 {
@@ -1687,13 +1785,16 @@ public class MatchStick implements Drawable {
     private void createFirstComp() // create the first component of the MStick
     {
         Point3d finalPos = new Point3d(0,0,0); //always put at origin;
-        Vector3d finalTangent = new Vector3d(0,0,0);
+        Vector3d finalTangent = new Vector3d(0,1,0);
         finalTangent = StickMathLib.randomUnitVec();
+        finalTangent = new Vector3d(0,-1/Math.sqrt(2),-1/Math.sqrt(2)); // RAMUST
        // System.out.println("random final tangent is : " + finalTangent);
         double devAngle = StickMathLib.randDouble(0.0, Math.PI * 2);
         int alignedPt = 26; // make it always the center of the mAxis curve
         MAxisArc nowArc = new MAxisArc();
-        nowArc.genArcRand();
+        nowArc.genArcRand(degWidth, screenDist, lengthFactor);
+                
+        devAngle = 0;
         nowArc.transRotMAxis(alignedPt, finalPos, alignedPt, finalTangent, devAngle);
 
         comp[1].initSet( nowArc, false, 0); // the MAxisInfo, and the branchUsed
@@ -1714,7 +1815,7 @@ public class MatchStick implements Drawable {
     */
     public boolean mutate(int debugParam) {
         final int MaxMutateTryTimes = 10;
-        final int MaxAddTubeTryTimes = 15;
+        final int MaxAddTubeTryTimes = 30;
         final int MaxCompNum = 4;
         final int MinCompNum = 2;
         final int MaxDeletionNum = 1;
@@ -1728,8 +1829,8 @@ public class MatchStick implements Drawable {
         double[] prob_addNewTube = { 0.3333, 0.6666, 1.0}; // 1/3 no add , 1/3 add 1, 1/3 add 2 tubes
 
         if ( this.nComponent <=3) {
-            prob_addNewTube[0] = 0.3;
-            prob_addNewTube[1] = 1.0;
+            prob_addNewTube[0] = 0.2;
+            prob_addNewTube[1] = 0.8;
         } else if ( this.nComponent >=4 && this.nComponent <=5) {
             prob_addNewTube[0] = 0.5;
             prob_addNewTube[1] = 1.0;
@@ -1747,24 +1848,25 @@ public class MatchStick implements Drawable {
         int nAddTube, nRemoveTube, nResultTube;
         // 1. decide what kind of modification should go on
         int nChgTotal;
-        int minChgTotal = 2;
-        int maxChgTotal = 3;
+        int minChgTotal = 1;
+        int maxChgTotal = 4;
         while (true) {
             boolean noChgFlg = true;
-            for (i=1; i<=nComponent; i++) {
-                if (  LeafBranch[i] == true)
-                    task4Tube[i] = StickMathLib.pickFromProbDist( prob_leaf);
-                else
-                    task4Tube[i] = StickMathLib.pickFromProbDist( prob_center);
-
-                if (task4Tube[i] != 1)
-                	noChgFlg = false; // at least one chg will occur
-            }
-                nAddTube = StickMathLib.pickFromProbDist( prob_addNewTube) - 1;
+            task4Tube[1] = 1;
+//            for (i=1; i<=nComponent; i++) {
+//                if (  LeafBranch[i] == true)
+//                    task4Tube[i] = StickMathLib.pickFromProbDist( prob_leaf);
+//                else
+//                    task4Tube[i] = StickMathLib.pickFromProbDist( prob_center);
+//
+//                if (task4Tube[i] != 1)
+//                	noChgFlg = false; // at least one chg will occur
+//            }
+            nAddTube = StickMathLib.pickFromProbDist( prob_addNewTube) - 1;
             nRemoveTube =0;
-            for (i=1; i<=nComponent; i++)
-                if (task4Tube[i] == 4)
-                    nRemoveTube++;
+//            for (i=1; i<=nComponent; i++)
+//                if (task4Tube[i] == 4)
+//                    nRemoveTube++;
             nResultTube = nComponent + nAddTube - nRemoveTube;
 
             // calculate nChgTotal
@@ -1780,7 +1882,7 @@ public class MatchStick implements Drawable {
                 //  System.out.println("nChgtotal is now " + nChgTotal);
                 continue; // we don't want to small or too big change
             }
-            if ( noChgFlg == false && nResultTube <= MaxCompNum  && nResultTube >= MinCompNum
+            if ( nResultTube <= MaxCompNum  && nResultTube >= MinCompNum
                 && nRemoveTube <= MaxDeletionNum ) // a legal condition
                 break;
         }
@@ -1818,6 +1920,22 @@ public class MatchStick implements Drawable {
                 task4Tube[i] = 1;
             int randComp  =StickMathLib.randInt(1, nComponent);
             task4Tube[randComp] = 3;
+        } else if ( debugParam == 5) {
+        	nRemoveTube = 0;
+            nAddTube = 0;
+            for (i=1; i<=nComponent; i++)
+                task4Tube[i] = 1;
+            
+            this.RadiusAssign( 0,0.5); // need to change this part
+
+            // 4. Apply the radius value onto each component
+            for (i=1; i<= nComponent; i++)
+            {
+                if( this.comp[i].RadApplied_Factory() == false) // a fail application
+                {
+                   return false;
+                }
+            }
         }
 
         // Now start the part of really doing the morphing
@@ -1835,21 +1953,22 @@ public class MatchStick implements Drawable {
 
         for (i=1; i<=nComponent; i++)
             task4Tube_backup[i] = task4Tube[i];
-
+        old_nComp = nComponent; // since this number will chg later in removeComponent
         int mutateTryTimes = 1;
         boolean successMutateTillNow;
         for (mutateTryTimes = 1; mutateTryTimes <= MaxMutateTryTimes; mutateTryTimes++) {
             //load the backup of task4Tube
-            for (i=1; i<=nComponent; i++)
+        	
+            for (i=1; i<=old_nComp; i++)
                 task4Tube[i] = task4Tube_backup[i];
 
             successMutateTillNow = true;
             //1. remove the stick
-            boolean[] removeFlg = new boolean[nComponent+1];
-            for (i=1; i<=nComponent; i++)
+            boolean[] removeFlg = new boolean[old_nComp+1];
+            for (i=1; i<=old_nComp; i++)
                 if (task4Tube[i] == 4)
                     removeFlg[i] = true;
-            old_nComp = nComponent; // since this number will chg later in removeComponent
+            // old_nComp = nComponent; // since this number will chg later in removeComponent
             // 2. fine tune and replacement
             // 2.1 remap the task4Tube
             if (nRemoveTube > 0) // else , we can skip this procedure
@@ -1861,7 +1980,7 @@ public class MatchStick implements Drawable {
                     task4Tube[counter++] = task4Tube[i];
 
             // 2.2 really doing the fine tune & replace
-            for (i=1; i<= nComponent; i++) {
+            for (i=1; i<= old_nComp; i++) {
                 boolean res = true;
                 if (task4Tube[i] == 2) // replace
                     res = this.replaceComponent(i);
@@ -1877,6 +1996,7 @@ public class MatchStick implements Drawable {
 
             // 3. Add new tube on the shape
             // we will try to add several times locally
+            nComponent = old_nComp;
             if (nAddTube > 0) {
                 MatchStick tempStoreStick = new MatchStick();
                 tempStoreStick.copyFrom(this);
@@ -1910,7 +2030,7 @@ public class MatchStick implements Drawable {
             if (!successMutateTillNow)
             	continue;
 
-            this.changeFinalRotation();
+            // this.changeFinalRotation();
 
             return this.smoothizeMStick();
         }
@@ -2097,6 +2217,7 @@ public class MatchStick implements Drawable {
         //Point3d nowComp1Center =   new Point3d(comp[compToCenter].mAxisInfo.mPts[comp[compToCenter].mAxisInfo.branchPt]);
         // Dec 26th, change .branchPt to .MiddlePT (i.e. always at middle)
         int midPtIndex = 26;
+        midPtIndex = 1; // RAMUST
         Point3d nowComp1Center =     new Point3d(comp[compToCenter].mAxisInfo.mPts[midPtIndex]);
         Vector3d shiftVec = new Vector3d();
         shiftVec.sub(origin, nowComp1Center);
@@ -2575,7 +2696,7 @@ public class MatchStick implements Drawable {
                this.copyFrom(old_MStick);
                // random get a new MAxisArc
                 nowArc = new MAxisArc();
-                nowArc.genArcRand();
+                nowArc.genArcRand(degWidth, screenDist, lengthFactor);
                 Vector3d finalTangent = new Vector3d();
                 finalTangent = StickMathLib.randomUnitVec();
                 double devAngle = StickMathLib.randDouble(0, Math.PI * 2);
@@ -3058,10 +3179,10 @@ public class MatchStick implements Drawable {
 
         //up to here, the eligible skeleton should be ready
         // 3. Assign the radius value
-        this.RadiusAssign( old_nComp); // need to change this part
+        this.RadiusAssign( 0,0.5); // need to change this part
 
         // 4. Apply the radius value onto each component
-        for (i=old_nComp+1; i<= nComponent; i++)
+        for (i=1; i<= nComponent; i++)
         {
             if( this.comp[i].RadApplied_Factory() == false) // a fail application
             {
@@ -3196,6 +3317,11 @@ public class MatchStick implements Drawable {
         // we sequentailly remove each stick, and see if the graph is still connected or not
         // if after removing a stick, the graph become un-connected, then this branch is a center branch
         // otherwise, it is a terminal branch
+    	if (nComponent == 1) {
+    		LeafBranch[0] = true;
+    		return;
+		}
+    	
         boolean showDebug = false;
           //generate connection map
         boolean[][] connect = new boolean[20][20];
@@ -3476,11 +3602,11 @@ public class MatchStick implements Drawable {
             MObj[i] = new MStickObj4Smooth(this.comp[i]); // use constructor to do the initialization
         }
 
-        if (nComponent == 1)
-        {
-            this.obj1 = MObj[1];
-            return true;
-        }
+//        if (nComponent == 1)
+//        {
+//            this.obj1 = MObj[1];
+//            return true;
+//        }
 
 //        int[] facePerComp = new int[nComponent];
 
@@ -3537,8 +3663,13 @@ public class MatchStick implements Drawable {
         this.obj1.rotateMesh(finalRotation);
 
         this.obj1.scaleTheObj(scaleForMAxisShape);
-
+        
+        Point3d ft = this.getMassCenter();
+        this.obj1.translateBack(ft);
+        this.finalTranslation = new double[] {ft.x,ft.y,ft.z};
+        
         this.finalShiftinDepth = this.obj1.translateVertexOnZ_ram();
+        this.finalTranslation[2] -= this.finalShiftinDepth.z; 
 
 //        this.finalShiftinDepth = new Point3d();
 //        if ( shiftOriginToSurface) // a boolean
@@ -3984,6 +4115,10 @@ public class MatchStick implements Drawable {
 	public void draw() {
 		init();
 		drawSkeleton();
+		
+//		initOccluder();
+//		drawOccluder();
+		
 		if (doClouds)
 			redraw();
 	}
@@ -3993,14 +4128,14 @@ public class MatchStick implements Drawable {
         GL11.glEnable(GL11.GL_DEPTH_TEST);    // Enables hidden-surface removal allowing for use of depth buffering
 		GL11.glEnable(GL11.GL_AUTO_NORMAL);   // Automatic normal generation when doing NURBS, if not enabled we have to provide the normals ourselves if we want to have a lighted image (which we do).
 		GL11.glEnable(GL11.GL_POLYGON_SMOOTH);
+//		GL11.glEnable(GL11.GL_CULL_FACE);
 
         this.initLight();
     }
-    protected void initLight()
-    {    	
-    	Lighting light = new Lighting();
-    	light.setLightColor(stimColor);
-    	light.setMaterial(Material.valueOf(textureType));
+    protected void initLight() {    	
+	    	Lighting light = new Lighting();
+	    	light.setLightColor(stimColor);
+	    	light.setMaterial(Material.valueOf(textureType));
 
         float[] mat_ambient = light.getAmbient();
         float[] mat_diffuse = light.getDiffuse();
@@ -4023,7 +4158,10 @@ public class MatchStick implements Drawable {
 
         FloatBuffer light_positionBuffer = BufferUtils.createFloatBuffer(light_position.length);
         light_positionBuffer.put(light_position).flip();
-
+        
+//        FloatBuffer light_spotDirBuffer = BufferUtils.createFloatBuffer(light_spotDir.length);
+//        light_spotDirBuffer.put(light_spotDir).flip();
+        
 
         GL11.glMaterial(GL11.GL_FRONT, GL11.GL_SPECULAR, mat_specularBuffer);
         GL11.glMaterialf(GL11.GL_FRONT, GL11.GL_SHININESS, mat_shininess);
@@ -4031,6 +4169,8 @@ public class MatchStick implements Drawable {
         GL11.glMaterial(GL11.GL_FRONT, GL11.GL_DIFFUSE, mat_diffuseBuffer);
 
         GL11.glLight(GL11.GL_LIGHT0, GL11.GL_POSITION, light_positionBuffer);
+//        GL11.glLight(GL11.GL_LIGHT0, GL11.GL_SPOT_DIRECTION, light_spotDirBuffer);
+//        GL11.glLightf(GL11.GL_LIGHT0, GL11.GL_SPOT_CUTOFF, light_spotAngle);
 
         // make sure white light
         float[] white_light = { 1.0f, 1.0f, 1.0f, 1.0f};
@@ -4042,6 +4182,17 @@ public class MatchStick implements Drawable {
         GL11.glEnable(GL11.GL_LIGHT0);
     }
 
+    protected void initOccluder() {
+    		occluder = new Occluder();
+    		occluder.color = new RGBColor(0.12f,0.12f,0.12f);
+    		occluder.leftBottom = new Point3d(-2.7, -2.7, 0);
+    		occluder.rightTop = new Point3d(2.7,2.7, 0);
+    		
+    		apertures = new ArrayList<Aperture>();
+    		apertures.add(new Aperture(0.5,0.4,0.001,0.4,true));
+    		apertures.add(new Aperture(0,0,0,0,false));
+    }
+    
     public void setTextureType(String tt) {
     	textureType = tt;
     }
@@ -4049,8 +4200,23 @@ public class MatchStick implements Drawable {
     public void setLightPosition(float[] lp) {
     	light_position = lp;
     }
+    
+    public void setLightAngle(double la) {
+    	this.light_angle = Math.toRadians(la);
+    	this.light_position = new float[]{(float) (200*Math.cos(light_angle)),0, (float) (200*Math.sin(light_angle)),0};
+    }
 
-   
+    public void setDegWidth(double degWidth) {
+    	this.degWidth = degWidth;
+    }
+    
+    public void setScreenDist(double sd) {
+    	this.screenDist = sd;
+    }
+    
+    public void setLengthFactor(double lf) {
+    	this.lengthFactor = lf;
+    }
     
     protected void redraw() {
     	// get bounding box
@@ -4254,10 +4420,242 @@ public class MatchStick implements Drawable {
     	return comp[i];
     }
     public double getFinalRotation(int i) {
-    	return finalRotation[i];
+    		return finalRotation[i];
     }
+    public double getFinalTranslation(int i) {
+    		return finalTranslation[i];
+    }
+    public void setFinalRotation(double[] fr) {
+    		finalRotation = fr;
+    }
+    public void setFinalTranslation(double[] ft) {
+    		finalTranslation = ft;
+    }
+    
     public void setDoClouds(boolean doClouds) {
-    	this.doClouds = doClouds;
+    		this.doClouds = doClouds;
+    }
+    
+    public void setDoCenter(boolean doCenter) {
+    		this.doCenter = doCenter;
+    }
+
+    void drawOccluder() {
+
+
+	    	Point3d lb = occluder.getLeftBottom();
+	    	Point3d rt = occluder.getRightTop();
+//    	lb.translateBy(shapeParams.pos);
+//    	rt.translateBy(shapeParams.pos);
+
+        float width = (float)((Math.abs(lb.x - rt.x)))/2; // * shapeParams.size);
+        float height = (float)((Math.abs(lb.y - rt.y)))/2; // * shapeParams.size);
+
+        Coordinates2D center = new Coordinates2D((lb.x + rt.x)/2, (lb.y + rt.y)/2);
+
+        float marginWidth = 1.3f;
+
+        float s1 = (float)(apertures.get(0).getS()); // * shapeParams.size);
+        float s2 = (float)(apertures.get(1).getS()); // * shapeParams.size);
+
+        if (!apertures.get(0).getIsActive())
+        	s1 = 0.0f;
+        if (!apertures.get(1).getIsActive())
+        	s2 = 0.0f;
+
+        float x1 = (float)(apertures.get(0).x); // + shapeParams.getPos().x);
+        float y1 = (float)(apertures.get(0).y); // + shapeParams.getPos().y);
+        float x2 = (float)(apertures.get(1).x); // + shapeParams.getPos().x);
+        float y2 = (float)(apertures.get(1).y); // + shapeParams.getPos().y);
+
+//        Coordinates2D tr = SachMathUtil.cart2pol(x1, y1);
+//        tr.setY(tr.getY() * shapeParams.size);
+//        Coordinates2D xy = SachMathUtil.pol2cart(tr.getX(),tr.getY());
+//        x1 = (float)xy.getX();
+//        y1 = (float)xy.getY();
+//
+//        tr = SachMathUtil.cart2pol(x2, y2);
+//        tr.setY(tr.getY() * shapeParams.size);
+//        xy = SachMathUtil.pol2cart(tr.getX(),tr.getY());
+//        x2 = (float)xy.getX();
+//        y2 = (float)xy.getY();
+
+        float[] apertureSpecs = {x1,y1,s1,x2,y2,s2};
+
+        FloatBuffer apertureSpecBuffer = BufferUtils.createFloatBuffer(2 * 3); // numHoles * numSpecsPerHole
+        apertureSpecBuffer.put(apertureSpecs);
+        apertureSpecBuffer.rewind();
+
+        createShaders();
+
+    //  critical ...
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+
+        // It is recommended to have the GLSL shaderProgram in use before setting values
+        GL20.glUseProgram(shaderProgram);
+        int location = GL20.glGetUniformLocation(shaderProgram, "marginWidth");
+        GL20.glUniform1f(location, marginWidth);
+
+        location = GL20.glGetUniformLocation(shaderProgram, "top");
+        GL20.glUniform1f(location, (float)center.getY() + (float) height);
+
+        location = GL20.glGetUniformLocation(shaderProgram, "bottom");
+        GL20.glUniform1f(location, (float)center.getY() - (float) height);
+
+        location = GL20.glGetUniformLocation(shaderProgram, "left");
+        GL20.glUniform1f(location, ((float)center.getX() - width));
+
+        location = GL20.glGetUniformLocation(shaderProgram, "right");
+        GL20.glUniform1f(location, ((float)center.getX() + width ));
+
+        location = GL20.glGetUniformLocation(shaderProgram, "alphaGain");
+        GL20.glUniform1f(location, occluderAlpha);
+
+        location = GL20.glGetUniformLocation(shaderProgram, "numHoles");
+        GL20.glUniform1i(location, apertures.size());
+
+        location = GL20.glGetUniformLocation(shaderProgram, "red");
+        GL20.glUniform1f(location, occluder.color.getRed());
+        
+        location = GL20.glGetUniformLocation(shaderProgram, "green");
+        GL20.glUniform1f(location, occluder.color.getGreen());
+        
+        location = GL20.glGetUniformLocation(shaderProgram, "blue");
+        GL20.glUniform1f(location, occluder.color.getBlue());
+        
+        
+        int loc4 = GL20.glGetUniformLocation(shaderProgram, "specs");
+        GL20.glUniform1(loc4, apertureSpecBuffer);
+
+        GL11.glBegin(GL11.GL_QUADS);
+            GL11.glVertex2d(center.getX() - width - marginWidth, center.getY() - height - marginWidth);
+            GL11.glVertex2d(center.getX() - width - marginWidth, center.getY() + height + marginWidth);
+            GL11.glVertex2d(center.getX() + width + marginWidth, center.getY() + height + marginWidth);
+            GL11.glVertex2d(center.getX() + width + marginWidth, center.getY() - height - marginWidth);
+        GL11.glEnd();
+
+        // "deactivate" the shader
+        GL20.glUseProgram(0);
+    }
+    void createShaders(){
+
+        int vertShader = 0, fragShader = 0;
+
+        try {
+            vertShader = createShader("screen.vert", ARBVertexShader.GL_VERTEX_SHADER_ARB);
+            fragShader = createShader("screen.frag", ARBFragmentShader.GL_FRAGMENT_SHADER_ARB);
+        }
+        catch(Exception exc) {
+            exc.printStackTrace();
+            return;
+        }
+        finally {
+            if(vertShader == 0 || fragShader == 0)
+                return;
+        }
+
+        shaderProgram = ARBShaderObjects.glCreateProgramObjectARB();
+
+        if(shaderProgram == 0)
+            return;
+
+        /*
+        * if the vertex and fragment shaders setup sucessfully,
+        * attach them to the shader program, link the shader program
+        * (into the GL context I suppose), and validate
+        */
+        ARBShaderObjects.glAttachObjectARB(shaderProgram, vertShader);
+        ARBShaderObjects.glAttachObjectARB(shaderProgram, fragShader);
+
+        ARBShaderObjects.glLinkProgramARB(shaderProgram);
+        if (ARBShaderObjects.glGetObjectParameteriARB(shaderProgram, ARBShaderObjects.GL_OBJECT_LINK_STATUS_ARB) == GL11.GL_FALSE) {
+            System.err.println(getLogInfo(shaderProgram));
+            return;
+        }
+
+        ARBShaderObjects.glValidateProgramARB(shaderProgram);
+        if (ARBShaderObjects.glGetObjectParameteriARB(shaderProgram, ARBShaderObjects.GL_OBJECT_VALIDATE_STATUS_ARB) == GL11.GL_FALSE) {
+            System.err.println(getLogInfo(shaderProgram));
+            return;
+        }
+    }
+    private int createShader(String filename, int shaderType) throws Exception {
+        int shader = 0;
+        try {
+            shader = ARBShaderObjects.glCreateShaderObjectARB(shaderType);
+
+            if(shader == 0)
+                return 0;
+
+            ARBShaderObjects.glShaderSourceARB(shader, readFileAsString(filename));
+            ARBShaderObjects.glCompileShaderARB(shader);
+
+            if (ARBShaderObjects.glGetObjectParameteriARB(shader, ARBShaderObjects.GL_OBJECT_COMPILE_STATUS_ARB) == GL11.GL_FALSE)
+                throw new RuntimeException("Error creating shader: " +  getLogInfo(shader));
+
+            return shader;
+        }
+        catch(Exception exc) {
+            ARBShaderObjects.glDeleteObjectARB(shader);
+            throw exc;
+        }
+    }
+    private static String getLogInfo(int obj) {
+        return ARBShaderObjects.glGetInfoLogARB(obj, ARBShaderObjects.glGetObjectParameteriARB(obj, ARBShaderObjects.GL_OBJECT_INFO_LOG_LENGTH_ARB));
+    }
+    private String readFileAsString(String filename) throws Exception {
+        StringBuilder source = new StringBuilder();
+        InputStream inptStrm = getClass().getResourceAsStream(filename);
+        Exception exception = null;
+
+        BufferedReader reader;
+        try{
+            reader = new BufferedReader(new InputStreamReader(inptStrm,"UTF-8"));
+
+            Exception innerExc= null;
+            try {
+                String line;
+                while((line = reader.readLine()) != null)
+                    source.append(line).append('\n');
+            }
+            catch(Exception exc) {
+                exception = exc;
+            }
+            finally {
+                try {
+                    reader.close();
+                }
+                catch(Exception exc) {
+                    if(innerExc == null)
+                        innerExc = exc;
+                    else
+                        exc.printStackTrace();
+                }
+            }
+
+            if(innerExc != null)
+                throw innerExc;
+        }
+        catch(Exception exc) {
+            exception = exc;
+        }
+        finally {
+            try {
+            	inptStrm.close();
+            }
+            catch(Exception exc) {
+                if(exception == null)
+                    exception = exc;
+                else
+                    exc.printStackTrace();
+            }
+
+            if(exception != null)
+                throw exception;
+        }
+
+        return source.toString();
     }
 }
 
@@ -4274,7 +4672,7 @@ class EndPt_struct {
       {
       comp = in_comp; uNdx = in_uNdx;
       pos.set( in_pos);
-          tangent.set( in_tangent);
+      tangent.set( in_tangent);
       rad = in_rad;
       if (in_uNdx == 51) // the last end
           tangent.negate(); // reverse the direction of tangent

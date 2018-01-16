@@ -30,7 +30,7 @@ public class MStickObj4Smooth {
     
     boolean doLighting = true;
     RGBColor stimColor;
-
+    
     public void setInfo(int inVect, Point3d[] ivect_info, Vector3d[] inormMat_info, int inFac, int[][] ifacInfo)
     {
         int i, j;
@@ -62,9 +62,9 @@ public class MStickObj4Smooth {
         int i;
         for (i=1; i<= nVect; i++)
         {
-            vect_info[i].x += transVec.x;
-            vect_info[i].y += transVec.y;
-            vect_info[i].z += transVec.z;
+            vect_info[i].x -= transVec.x;
+            vect_info[i].y -= transVec.y;
+            vect_info[i].z -= transVec.z;
         }
     }
 
@@ -215,6 +215,76 @@ public class MStickObj4Smooth {
 			GL11.glVertex3d( p3.x, p3.y, p3.z);
 			
 			GL11.glEnd();
+		}
+		GL11.glDisable(GL11.GL_LIGHTING);
+    }
+    
+    public void drawVectGrat(double degWidth) {
+		GL11.glColor3f(stimColor.getRed(),stimColor.getGreen(),stimColor.getBlue());
+		if (doLighting)
+			GL11.glEnable(GL11.GL_LIGHTING);
+  
+		int nRow = 1, nCol = 1;
+		
+        double screenDist = 100;
+        double pixWidth = 1920*screenDist*Math.tan(Math.toRadians(degWidth))/54.6;
+		
+		double pixSpace = 3*pixWidth; // rod3d
+//        double pixSpace = pixWidth + 4; // sideC
+		
+		double xShift = 0.019011*pixSpace, yShift = 1.8;
+		
+		
+		translateBack(new Point3d(-xShift*(nCol/2),-yShift*(nRow/2),0));
+		
+		for (int j=0; j<nCol; j++) {
+			for (int k=0; k<nRow; k++) {
+				double shiftx = xShift*j;
+				double shifty = yShift*k;
+//				shifty = shifty+j*0.4;
+//				if (Math.IEEEremainder(k, 2) == 0)
+//					shifty = -shifty;
+				
+					
+				translateBack(new Point3d(shiftx,shifty,0));
+				
+				for (int i=0; i< nFac; i++) {
+					GL11.glBegin(GL11.GL_TRIANGLES);
+					
+					Point3d p1 = vect_info[ facInfo[i][0]];
+					Point3d p2 = vect_info[ facInfo[i][1]];
+					Point3d p3 = vect_info[ facInfo[i][2]];
+					Vector3d v1 = normMat_info[ facInfo[i][0]];
+					Vector3d v2 = normMat_info[ facInfo[i][1]];
+					Vector3d v3 = normMat_info[ facInfo[i][2]];
+					
+					if ( v1.length() >= 1.01 || v1.length() <= 0.99) {
+						System.out.println("error in v1 length as:");
+						System.out.println(v1.x +" "+ v1.y + " " +v1.z);
+						System.out.println(v1.length());
+					}
+					if ( v2.length() >= 1.01 || v2.length() <= 0.99) {
+						System.out.println("error in v2 length as:");
+						System.out.println(v2.x +" "+ v2.y + " " +v2.z);
+						System.out.println(v2.length());
+					}
+					if ( v3.length() >= 1.01 || v3.length() <= 0.99) {
+						System.out.println("error in v3 length as:");
+						System.out.println(v3.x +" "+ v3.y + " " +v3.z);
+						System.out.println(v3.length());
+					}
+					
+					GL11.glNormal3d( v1.x, v1.y, v1.z);
+					GL11.glVertex3d( p1.x, p1.y, p1.z);
+					GL11.glNormal3d( v2.x, v2.y, v2.z);
+					GL11.glVertex3d( p2.x, p2.y, p2.z);
+					GL11.glNormal3d( v3.x, v3.y, v3.z);
+					GL11.glVertex3d( p3.x, p3.y, p3.z);
+					
+					GL11.glEnd();
+				}
+				translateBack(new Point3d(-shiftx,-shifty,0));
+			}
 		}
 		GL11.glDisable(GL11.GL_LIGHTING);
     }

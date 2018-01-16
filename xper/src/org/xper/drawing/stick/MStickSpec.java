@@ -308,45 +308,60 @@ public class MStickSpec {
     	
     	String outStr = getFaceSpec();
         try {
-        	BufferedWriter out = new BufferedWriter(new FileWriter(fname + "_face.txt"));
+        		BufferedWriter out = new BufferedWriter(new FileWriter(fname + "_face.txt"));
             
             out.write(  outStr);
             out.flush();
             out.close();
         } catch (Exception e) { 
-        	System.out.println(e);
-    	}
+        		System.out.println(e);
+    		}
         
         outStr = getVertSpec();
         try {
-        	BufferedWriter out = new BufferedWriter(new FileWriter(fname + "_vert.txt"));
+        		BufferedWriter out = new BufferedWriter(new FileWriter(fname + "_vert.txt"));
             
             out.write(  outStr);
             out.flush();
             out.close();
         } catch (Exception e) { 
-        	System.out.println(e);
-    	}
+        		System.out.println(e);
+    		}
+        
+        outStr = getNormSpec();
+        try {
+        		BufferedWriter out = new BufferedWriter(new FileWriter(fname + "_norm.txt"));
+            
+            out.write(  outStr);
+            out.flush();
+            out.close();
+        } catch (Exception e) { 
+        		System.out.println(e);
+    		}
         
         this.vertex = null;
         outStr = this.toXml();
         try {
-        	BufferedWriter out = new BufferedWriter(new FileWriter(fname + "_spec.xml"));
+        		BufferedWriter out = new BufferedWriter(new FileWriter(fname + "_spec.xml"));
             
             out.write(  outStr);
             out.flush();
             out.close();
         } catch (Exception e) { 
-        	System.out.println(e);
-    	}
+        		System.out.println(e);
+    		}
     }
     
     public String getVertSpec() {
-    	return vectToStr(getVectInfo(),getNVect());
+    		return vectToStr(getVectInfo(),getNVect());
     }
     
     public String getFaceSpec() {
-    	return facToStr(getFacInfo(), getNFac());
+    		return facToStr(getFacInfo(), getNFac());
+    }
+    
+    public String getNormSpec() {
+    		return normToStr(getNormMatInfo(), getNVect());
     }
     
     public String toXml () {
@@ -455,6 +470,14 @@ public class MStickSpec {
 		String str = new String();
 		for(int i=0; i<nFace; i++) {
 			str = str + fac[i][0] + "," + fac[i][1] + "," + fac[i][2] + "\n";
+		}
+		return str;
+	}
+	
+	private String normToStr(Vector3d[] norm, int nVect) {
+		String str = new String();
+		for(int i=1; i<=nVect; i++) {
+			str = str + norm[i].x + "," + norm[i].y + "," + norm[i].z + "\n";
 		}
 		return str;
 	}

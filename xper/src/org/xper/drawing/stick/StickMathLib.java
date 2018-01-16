@@ -135,17 +135,17 @@ public class StickMathLib
     /**
 	generate a random unit vector (uniform distribution on the ball)
     */
-    public static Vector3d randomUnitVec()
-     {
+    public static Vector3d randomUnitVec() {
         Random rand = new Random();	
         
-	double u = rand.nextDouble();
-	double v = rand.nextDouble();
-	double theta = 2 * Math.PI * u;
+		double u = rand.nextDouble();
+		double v = rand.nextDouble();
+		
+		double theta = 2 * Math.PI * u;
         double phi = Math.acos(2 * v -1);
-	Vector3d res = new Vector3d( Math.cos(theta)* Math.sin(phi), Math.sin(theta)*Math.sin(phi), Math.cos(phi));
-	return res;
-         
+		
+        Vector3d res = new Vector3d( Math.cos(theta)* Math.sin(phi), Math.sin(theta)*Math.sin(phi), Math.cos(phi));
+		return res;
      }
     /**
 	Pick a index value from a pre-defined Prob distribution

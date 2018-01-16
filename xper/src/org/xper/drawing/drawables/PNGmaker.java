@@ -6,11 +6,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.jzy3d.plot3d.rendering.image.GLImage;
 import org.lwjgl.opengl.GL11;
-import org.xper.drawing.stick.MatchStick;
 import org.xper.utils.DbUtil;
 
 public class PNGmaker {
@@ -23,7 +23,7 @@ public class PNGmaker {
 	
 	public PNGmaker() {}
 
-	public void createAndSavePNGsfromObjs(List<MatchStick> objs,List<Long> stimObjIds) {	
+	public <T extends Drawable> void createAndSavePNGsfromObjs(List<T> objs,List<Double> stimObjIds, String prefix) {	
 		DrawingManager testWindow = new DrawingManager(height,width);
 		testWindow.setBackgroundColor(0.3f,0.3f,0.3f);
 		testWindow.setPngMaker(this);
@@ -31,15 +31,31 @@ public class PNGmaker {
 		testWindow.setStimObjs(objs);
 		testWindow.setStimObjIds(stimObjIds);
 		
-		testWindow.drawStimuli(saveToFile,saveToDb);				// draw object
+		testWindow.drawStimuli(saveToFile,saveToDb,prefix);				// draw object
 		testWindow.close();
 	}
 	
-	public void saveImageToFile(long stimObjId) {
+	public <T extends Drawable> void createAndSavePNGsfromObjs(List<T> objs,List<Long> stimObjIds) {	
+		DrawingManager testWindow = new DrawingManager(height,width);
+		testWindow.setBackgroundColor(0.3f,0.3f,0.3f);
+		testWindow.setPngMaker(this);
+
+		testWindow.setStimObjs(objs);
+		List<Double> ids = new ArrayList<Double>();
+		for(Long id : stimObjIds)
+			ids.add((double)id);
+		
+		testWindow.setStimObjIds(ids);
+		
+		testWindow.drawStimuli(saveToFile,saveToDb,"");				// draw object
+		testWindow.close();
+	}
+	
+	public void saveImageToFile(double stimObjId, String prefix) {
 		byte[] data = screenShotBinary();  
 
 		try {
-			FileOutputStream fos = new FileOutputStream(imageFolderName + "/" + stimObjId + ".png");
+			FileOutputStream fos = new FileOutputStream(imageFolderName + "/" + prefix + (int)stimObjId + ".png");
 		    fos.write(data);
 		    fos.close();
 		} 
@@ -48,7 +64,7 @@ public class PNGmaker {
 		}
 	}
 	
-	public void saveImageToDb(long stimObjId) {
+	public void saveImageToDb(double stimObjId) {
 		byte[] data = screenShotBinary();  
 		dbUtilObj.writeThumbnail(stimObjId,data);
 	}
